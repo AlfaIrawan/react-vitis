@@ -1,0 +1,645 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 30% 5%;
+    --foreground: 210 40% 98%;
+    --card: 240 25% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 240 25% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 187 100% 55%;
+    --primary-foreground: 240 30% 5%;
+    --secondary: 270 25% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 20% 12%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 270 50% 20%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 240 25% 15%;
+    --input: 240 25% 15%;
+    --ring: 187 100% 55%;
+  }
+
+  /* Deep Cosmic Enterprise (Flagship Theme) */
+  [data-accent="deep-cosmic"] {
+    --background: 220 33% 97%;
+    --foreground: 216 69% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 216 69% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 216 69% 14%;
+    --primary: 216 69% 14%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 220 30% 94%;
+    --secondary-foreground: 216 69% 14%;
+    --muted: 220 20% 94%;
+    --muted-foreground: 224 30% 40%;
+    --accent: 224 64% 33%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 216 40% 88%;
+    --input: 216 40% 88%;
+    --ring: 224 64% 33%;
+    --cosmic-highlight: 229 60% 63%;
+    --cosmic-outline: 216 69% 14%;
+  }
+
+  [data-accent="deep-cosmic"].dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 40% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 40% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 224 64% 33%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 222 35% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 229 60% 63%;
+    --accent-foreground: 216 69% 14%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 224 30% 20%;
+    --input: 224 30% 20%;
+    --ring: 229 60% 63%;
+    --cosmic-highlight: 229 60% 63%;
+    --cosmic-outline: 224 64% 33%;
+  }
+
+  /* Indigo Command Center — Executive dashboard, strategic / analytical */
+  [data-accent="indigo-command"] {
+    --background: 214 32% 96%;
+    --foreground: 218 52% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 218 52% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 218 52% 16%;
+    --primary: 218 52% 16%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 214 28% 92%;
+    --secondary-foreground: 218 52% 16%;
+    --muted: 214 25% 92%;
+    --muted-foreground: 221 30% 42%;
+    --accent: 221 54% 40%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 221 54% 40%;
+    --indigo-success: 174 60% 40%;
+    --indigo-warning: 38 92% 50%;
+  }
+
+  [data-accent="indigo-command"].dark {
+    --background: 218 40% 10%;
+    --foreground: 210 40% 96%;
+    --card: 218 35% 14%;
+    --card-foreground: 210 40% 96%;
+    --popover: 218 35% 14%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 221 54% 40%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 218 30% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 218 25% 16%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 221 54% 50%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 218 30% 22%;
+    --input: 218 30% 22%;
+    --ring: 221 54% 50%;
+    --indigo-success: 174 60% 45%;
+    --indigo-warning: 38 92% 55%;
+  }
+
+  /* Frosted Steel Blue — Minimalist SaaS: terang, slate gray, aksen steel-blue (biru terang) */
+  [data-accent="frosted-steel"] {
+    --background: 210 40% 98%;
+    --foreground: 215 25% 27%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+    --primary: 215 25% 27%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 32% 94%;
+    --secondary-foreground: 215 25% 27%;
+    --muted: 214 32% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 90%;
+    --input: 214 32% 90%;
+    --ring: 199 89% 48%;
+    --radius: 0.75rem;
+  }
+
+  [data-accent="frosted-steel"].dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 96%;
+    --card: 222 40% 14%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 40% 14%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 35% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 199 89% 55%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 30% 24%;
+    --input: 222 30% 24%;
+    --ring: 199 89% 55%;
+  }
+
+  /* Blue Granite — AI governance: institutional, topbar gelap slate, background abu cool gray */
+  [data-accent="blue-granite"] {
+    --background: 220 22% 89%;
+    --foreground: 218 33% 16%;
+    --card: 220 28% 97%;
+    --card-foreground: 218 33% 16%;
+    --popover: 220 28% 97%;
+    --popover-foreground: 218 33% 16%;
+    --primary: 221 48% 28%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 220 18% 85%;
+    --secondary-foreground: 218 33% 16%;
+    --muted: 220 16% 85%;
+    --muted-foreground: 221 22% 38%;
+    --accent: 221 48% 28%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 218 22% 78%;
+    --input: 218 22% 78%;
+    --ring: 221 48% 28%;
+  }
+
+  [data-accent="blue-granite"].dark {
+    --background: 218 33% 10%;
+    --foreground: 210 40% 96%;
+    --card: 218 30% 14%;
+    --card-foreground: 210 40% 96%;
+    --popover: 218 30% 14%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 221 48% 35%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 218 25% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 218 22% 18%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 222 25% 50%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 218 22% 24%;
+    --input: 218 22% 24%;
+    --ring: 221 48% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border/20;
+  }
+  html {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+  body {
+    @apply text-foreground antialiased;
+    position: relative;
+    min-height: 100vh;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/images/background-1.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 1;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      linear-gradient(225deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body::before,
+    body::after {
+      animation: none;
+    }
+  }
+
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Clean light mode utilities */
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-lg;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  
+  .glass-card {
+    @apply bg-white/75 backdrop-blur-lg border border-white/30 shadow-xl;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(59, 130, 246, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .glass-card-neon {
+    @apply bg-white/75 backdrop-blur-lg border border-blue-300/40 shadow-xl;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 4px 16px rgba(59, 130, 246, 0.15),
+      0 0 0 1px rgba(59, 130, 246, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .glass-card-purple {
+    @apply bg-white/75 backdrop-blur-lg border border-purple-300/40 shadow-xl;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 4px 16px rgba(168, 85, 247, 0.15),
+      0 0 0 1px rgba(168, 85, 247, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .glass-card-orange {
+    @apply bg-white/75 backdrop-blur-lg border border-orange-300/40 shadow-xl;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 4px 16px rgba(251, 146, 60, 0.15),
+      0 0 0 1px rgba(251, 146, 60, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-lg;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .glass-panel-neon {
+    @apply bg-white/70 backdrop-blur-md border border-blue-200/40 shadow-lg;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      0 2px 8px rgba(59, 130, 246, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  
+  .glass-sidebar {
+    @apply bg-white/80 backdrop-blur-xl border-r border-white/30;
+    box-shadow: 
+      2px 0 16px rgba(0, 0, 0, 0.08),
+      inset -1px 0 0 rgba(255, 255, 255, 0.5);
+  }
+  
+  .glass-topbar {
+    @apply bg-white/80 backdrop-blur-xl border-b border-white/30;
+    box-shadow: 
+      0 2px 16px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  /* Deep Cosmic Enterprise: frosted glass, soft shadow, 1px soft navy outline */
+  [data-accent="deep-cosmic"] .glass-card,
+  .glass-card-cosmic {
+    @apply bg-white/75 backdrop-blur-lg border shadow-xl;
+    border-color: rgba(11, 31, 58, 0.15);
+    box-shadow:
+      0 8px 32px rgba(11, 31, 58, 0.08),
+      0 2px 8px rgba(31, 60, 136, 0.06),
+      0 0 0 1px rgba(11, 31, 58, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  [data-accent="deep-cosmic"] .glass-panel,
+  .glass-panel-cosmic {
+    @apply bg-white/70 backdrop-blur-md border shadow-lg;
+    border-color: rgba(11, 31, 58, 0.12);
+    box-shadow:
+      0 8px 32px rgba(11, 31, 58, 0.06),
+      0 0 0 1px rgba(11, 31, 58, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  /* Cosmic topbar: subtle gradient (navy → indigo) */
+  [data-accent="deep-cosmic"] .glass-topbar {
+    background: linear-gradient(135deg, rgba(11, 31, 58, 0.92) 0%, rgba(31, 60, 136, 0.88) 100%);
+    @apply backdrop-blur-xl border-b;
+    border-bottom-color: rgba(11, 31, 58, 0.2);
+    box-shadow:
+      0 2px 20px rgba(11, 31, 58, 0.15),
+      0 0 0 1px rgba(11, 31, 58, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  [data-accent="deep-cosmic"].dark .glass-topbar {
+    background: linear-gradient(135deg, rgba(11, 31, 58, 0.95) 0%, rgba(31, 60, 136, 0.9) 100%);
+    border-bottom-color: rgba(106, 127, 219, 0.15);
+    box-shadow:
+      0 2px 20px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(31, 60, 136, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  [data-accent="deep-cosmic"] .glass-topbar,
+  [data-accent="deep-cosmic"].dark .glass-topbar {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  [data-accent="deep-cosmic"] .glass-topbar .text-muted-foreground,
+  [data-accent="deep-cosmic"] .glass-topbar [class*="text-gray"],
+  [data-accent="deep-cosmic"].dark .glass-topbar .text-muted-foreground,
+  [data-accent="deep-cosmic"].dark .glass-topbar [class*="text-gray"] {
+    color: rgba(255, 255, 255, 0.75) !important;
+  }
+
+  /* Topbar icon buttons: di topbar gelap, hover pakai highlight gelap + ikon gelap supaya selalu terlihat */
+  [data-accent="deep-cosmic"] .glass-topbar .topbar-action-btn:hover,
+  [data-accent="deep-cosmic"].dark .glass-topbar .topbar-action-btn:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+  [data-accent="deep-cosmic"] .glass-topbar .topbar-action-btn:hover .topbar-action-icon,
+  [data-accent="deep-cosmic"].dark .glass-topbar .topbar-action-btn:hover .topbar-action-icon {
+    color: #1e293b !important;
+  }
+
+  /* Semua tema: saat hover tombol topbar, ikon jadi gelap supaya tetap terbaca (termasuk bila background putih) */
+  .glass-topbar .topbar-action-btn:hover .topbar-action-icon {
+    color: #1e293b !important;
+  }
+
+  /* Nama tenant di topbar: garis & teks terang saat tema topbar gelap (Deep Cosmic) */
+  [data-accent="deep-cosmic"] .glass-topbar .topbar-tenant-sep {
+    background: rgba(255, 255, 255, 0.4) !important;
+  }
+  [data-accent="deep-cosmic"] .glass-topbar .topbar-tenant-name {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+  /* Tema Blue Granite: logo putih, teks Adira & garis pembatas lebih cerah */
+  [data-accent="blue-granite"] .glass-topbar .topbar-tenant-sep {
+    background: rgba(255, 255, 255, 0.5) !important;
+  }
+  [data-accent="blue-granite"] .glass-topbar .topbar-tenant-name {
+    color: rgba(255, 255, 255, 0.98) !important;
+  }
+
+  /* Search bar di topbar: satu blok background seragam (hilang belang), ikon & teks gelap */
+  .glass-topbar .topbar-search {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  .glass-topbar .topbar-search .topbar-search-icon,
+  .glass-topbar .topbar-search .topbar-search-shortcut {
+    color: #64748b !important;
+  }
+  .glass-topbar .topbar-search .topbar-search-input,
+  .glass-topbar .topbar-search .topbar-search-input::placeholder {
+    color: #1e293b !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .glass-topbar .topbar-search .topbar-search-input::placeholder {
+    color: #64748b !important;
+  }
+  .glass-topbar .topbar-search .topbar-search-input:focus {
+    outline: none;
+  }
+
+  /* Environment badge: selalu kontras (background terang, teks gelap) di topbar */
+  .glass-topbar .environment-indicator {
+    color: #0f172a !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .glass-topbar .environment-indicator span,
+  .glass-topbar .environment-indicator [class*="text-slate"] {
+    color: #1e293b !important;
+  }
+
+  /* Indigo Command Center: structured grid look, clear borders, status chips */
+  [data-accent="indigo-command"] .glass-card,
+  [data-accent="indigo-command"] .glass-panel {
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(17, 34, 64, 0.06), 0 0 0 1px rgba(46, 79, 156, 0.04);
+    background: hsl(var(--card));
+  }
+
+  [data-accent="indigo-command"] .glass-topbar {
+    border-bottom: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 0 0 hsl(var(--border));
+    background: hsl(var(--card));
+  }
+
+  /* Frosted Steel Blue: rounded 12px cards, very soft shadows */
+  [data-accent="frosted-steel"] .glass-card,
+  [data-accent="frosted-steel"] .glass-panel {
+    border-radius: 12px;
+    border: 1px solid hsl(214 32% 90%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    background: hsl(var(--card));
+  }
+
+  [data-accent="frosted-steel"] .glass-topbar {
+    border-radius: 0;
+    border-bottom: 1px solid hsl(214 32% 90%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    background: hsl(var(--card));
+  }
+
+  /* Blue Granite: strong divider lines, structured, dense but elegant */
+  [data-accent="blue-granite"] .glass-card,
+  [data-accent="blue-granite"] .glass-panel {
+    border: 1px solid hsl(var(--border));
+    border-left: 4px solid hsl(221 48% 28%);
+    box-shadow: 0 2px 6px rgba(28, 38, 56, 0.08);
+    background: hsl(var(--card));
+  }
+
+  [data-accent="blue-granite"] .glass-topbar {
+    background: hsl(218 33% 16%) !important;
+    border-bottom: 3px solid hsl(221 48% 28%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  [data-accent="blue-granite"] .glass-topbar .text-muted-foreground,
+  [data-accent="blue-granite"] .glass-topbar [class*="text-gray"],
+  [data-accent="blue-granite"] .glass-topbar input::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  [data-accent="blue-granite"] .glass-topbar input,
+  [data-accent="blue-granite"] .glass-topbar [data-slot="input"] {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+  }
+
+  /* App Launcher dropdown: selalu kontras tinggi (background terang, teks gelap) meski di dalam topbar */
+  .app-launcher-content {
+    color: #0f172a !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+  }
+  .app-launcher-content .font-semibold,
+  .app-launcher-content [class*="text-slate-900"] {
+    color: #0f172a !important;
+  }
+  .app-launcher-content .text-xs.leading-relaxed,
+  .app-launcher-content [class*="text-slate-600"] {
+    color: #475569 !important;
+  }
+  .app-launcher-content .text-slate-700,
+  .app-launcher-content .h-5.w-5 {
+    color: #334155 !important;
+  }
+
+  /* Notification panel: kontras tinggi (teks gelap) meski di dalam topbar */
+  .notification-panel-content {
+    color: #0f172a !important;
+  }
+  .notification-panel-content .text-slate-900,
+  .notification-panel-content .font-semibold {
+    color: #0f172a !important;
+  }
+  .notification-panel-content .text-slate-600,
+  .notification-panel-content .text-xs {
+    color: #475569 !important;
+  }
+  .notification-panel-content .text-slate-500 {
+    color: #64748b !important;
+  }
+  /* Tema Deep Cosmic: popup notifikasi tidak transparan (background solid) */
+  [data-accent="deep-cosmic"] .notification-panel-content {
+    background: #ffffff !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Theme swatch: label selalu gelap (termasuk saat hover) di tema Default supaya terbaca */
+  .theme-swatch-label {
+    color: #1e293b !important;
+  }
+  .theme-swatch-grid button:hover .theme-swatch-label {
+    color: #1e293b !important;
+  }
+  /* Tiga opsi (Deep Cosmic, Indigo, Blue Granite): saat TIDAK dipilih, label wajib gelap */
+  .theme-swatch-dark-bg:not(.bg-accent) .theme-swatch-label-dark,
+  .theme-swatch-dark-bg:not(.bg-accent):hover .theme-swatch-label-dark {
+    color: #1e293b !important;
+  }
+  /* Swatch gelap yang dipilih: label terang (termasuk saat hover) */
+  .theme-swatch-dark-bg.bg-accent .theme-swatch-label-dark,
+  .theme-swatch-dark-bg.bg-accent:hover .theme-swatch-label-dark {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+}
+
+/* Theme swatch: override akhir supaya label Deep Cosmic / Indigo / Blue Granite selalu terbaca saat tema Default */
+.theme-swatch-grid .theme-swatch-label {
+  color: #1e293b !important;
+}
+.theme-swatch-grid button:hover .theme-swatch-label {
+  color: #1e293b !important;
+}
+.theme-swatch-grid .theme-swatch-dark-bg:not(.bg-accent) .theme-swatch-label-dark,
+.theme-swatch-grid .theme-swatch-dark-bg:not(.bg-accent):hover .theme-swatch-label-dark {
+  color: #1e293b !important;
+}
+.theme-swatch-grid .theme-swatch-dark-bg.bg-accent .theme-swatch-label-dark,
+.theme-swatch-grid .theme-swatch-dark-bg.bg-accent:hover .theme-swatch-label-dark {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Tema Deep Cosmic: saat hover swatch yang tidak dipilih, teks lebih terang supaya terbaca di background hover yang gelap */
+[data-accent="deep-cosmic"] .theme-swatch-grid button:not(.bg-accent):hover .theme-swatch-label {
+  color: #e2e8f0 !important;
+}
+/* Tema Blue Granite: saat hover Default/Deep Cosmic/Indigo/Frosted Steel, teks lebih cerah (background hover gelap) */
+[data-accent="blue-granite"] .theme-swatch-grid button:not(.bg-accent):hover .theme-swatch-label {
+  color: #e2e8f0 !important;
+}
+/* Tema Indigo: saat hover swatch yang tidak dipilih, teks lebih cerah (background hover gelap) */
+[data-accent="indigo-command"] .theme-swatch-grid button:not(.bg-accent):hover .theme-swatch-label {
+  color: #e2e8f0 !important;
+}

@@ -1,0 +1,12 @@
+﻿{
+    "name":  "react-vitis",
+    "service_id":  "frontend-vitis",
+    "version":  "0.0.0",
+    "routes":  [
+                   "/"
+               ],
+    "health":  {
+                   "status":  "ready"
+               }
+}
+
