@@ -1,27 +1,23 @@
-// Single source of truth for demo users (id used by notification service)
-export const DEMO_USERS = [
-  {
-    id: '00000000-0000-0000-0000-000000000001',
-    email: 'admin@vitis.local',
-    password: 'admin',
-    name: 'Admin User',
-    role: 'admin',
-  },
-  {
-    id: '00000000-0000-0000-0000-000000000002',
-    email: 'reviewer@vitis.local',
-    password: 'reviewer',
-    name: 'Reviewer User',
-    role: 'reviewer',
-  },
-  {
-    id: '00000000-0000-0000-0000-000000000003',
-    email: 'member@vitis.local',
-    password: 'member',
-    name: 'Member User',
-    role: 'member',
-  },
-] as const
+/**
+ * Identity Lite OIDC auth for Vitis (password + social + passkey + silent SSO).
+ * Shares the identity-lite backend and `tectona-spa` client with Platanus / Tectona,
+ * so a login in any of them bootstraps the others (same browser).
+ */
+import {
+  loginWithPassword,
+  exchangeAuthorizationCode,
+  refreshAccessToken,
+  fetchUserInfo,
+  registerWithEmail,
+  bootstrapSsoSession,
+  revokeServerSession,
+  roleFromEmail,
+  normalizeLoginEmail,
+  type OidcLoginOptions,
+  type OidcTokenResponse,
+  type OidcUserInfo,
+} from '@/lib/api/identityApi'
+import { enrollPasskey, authenticateWithPasskey } from '@/lib/api/webauthnApi'
 
 export interface Session {
   user: {
@@ -29,107 +25,156 @@ export interface Session {
     name: string
     email: string
     role: string
+    roles?: string[]
   }
   token: string
+  refreshToken?: string
+  expiresAt?: string
   loginAt: string
 }
 
 const SESSION_KEY = 'vitis_session'
-
-/**
- * Login with email and password
- * Normalizes input and validates against DEMO_USERS
- * @throws {Error} if credentials are invalid
- */
-export function login(email: string, password: string): Session {
-  // Normalize input
-  const normalizedEmail = email.trim().toLowerCase()
-  const normalizedPassword = password.trim()
-
-  // Find user in DEMO_USERS
-  const user = DEMO_USERS.find(
-    (u) => u.email.toLowerCase() === normalizedEmail && u.password === normalizedPassword
-  )
-
-  if (!user) {
-    throw new Error('Invalid email or password')
-  }
-
-  // Don't overwrite existing session if login fails (but this is success, so proceed)
-  const session: Session = {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-    token: 'demo-token',
-    loginAt: new Date().toISOString(),
-  }
-
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  return session
-}
-
-/**
- * Logout current user
- */
-export function logout(): void {
-  localStorage.removeItem(SESSION_KEY)
-}
-
-/**
- * Get current session from localStorage
- */
-/** Map email to demo user id for notification service (legacy sessions without id). */
-const EMAIL_TO_ID: Record<string, string> = {
-  'admin@vitis.local': '00000000-0000-0000-0000-000000000001',
-  'reviewer@vitis.local': '00000000-0000-0000-0000-000000000002',
-  'member@vitis.local': '00000000-0000-0000-0000-000000000003',
-}
+const REFRESH_BUFFER_MS = 60_000
 
 export function getSession(): Session | null {
   try {
-    const stored = localStorage.getItem(SESSION_KEY)
-    if (!stored) {
-      return null
-    }
-
-    const session = JSON.parse(stored) as Session
-    if (session?.user && !('id' in session.user)) {
-      session.user.id = EMAIL_TO_ID[session.user.email?.toLowerCase()] ?? '00000000-0000-0000-0000-000000000001'
-    }
-    return session
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as Session
   } catch {
     return null
   }
 }
 
-/**
- * Check if user is authenticated
- */
+function persistSession(session: Session): void {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+}
+
+export function clearSession(): void {
+  localStorage.removeItem(SESSION_KEY)
+}
+
 export function isAuthenticated(): boolean {
   return getSession() !== null
 }
 
-/**
- * Require authentication - returns session or null
- * Helper for components that need to check auth status
- * @returns Session if authenticated, null otherwise
- */
 export function requireAuth(): Session | null {
   return getSession()
 }
 
-/**
- * Get demo accounts info (for login page helper)
- * Uses DEMO_USERS as single source of truth
- */
-export function getDemoAccounts() {
-  return DEMO_USERS.map(({ email, password, role, name }) => ({
-    email,
-    password,
-    role,
-    name,
-  }))
+function buildSessionFromUserinfo(
+  userinfo: OidcUserInfo,
+  emailHint: string,
+  token: OidcTokenResponse,
+): Session {
+  const email = userinfo.email ?? emailHint
+  const role =
+    userinfo.roles?.includes('tectona_root') || userinfo.roles?.includes('admin')
+      ? 'admin'
+      : userinfo.roles?.includes('reviewer')
+        ? 'reviewer'
+        : roleFromEmail(email)
+  return {
+    user: {
+      id: userinfo.sub,
+      name: email.split('@')[0] || 'User',
+      email,
+      role,
+      roles: userinfo.roles ?? [],
+    },
+    token: token.access_token,
+    refreshToken: token.refresh_token,
+    expiresAt: new Date(Date.now() + token.expires_in * 1000).toISOString(),
+    loginAt: new Date().toISOString(),
+  }
+}
+
+async function finalize(token: OidcTokenResponse, emailHint: string): Promise<Session> {
+  const userinfo = await fetchUserInfo(token.access_token)
+  const session = buildSessionFromUserinfo(userinfo, emailHint, token)
+  persistSession(session)
+  return session
+}
+
+export async function login(email: string, password: string, opts?: OidcLoginOptions): Promise<Session> {
+  const token = await loginWithPassword(email, password, opts)
+  return finalize(token, normalizeLoginEmail(email))
+}
+
+export async function loginWithAuthorizationCode(input: {
+  code: string
+  redirectUri: string
+  codeVerifier: string
+}): Promise<Session> {
+  const token = await exchangeAuthorizationCode(input)
+  return finalize(token, '')
+}
+
+export { registerWithEmail }
+
+function isAccessTokenExpired(session: Session, skewMs = 0): boolean {
+  if (!session.expiresAt) return false
+  return Date.now() + skewMs >= new Date(session.expiresAt).getTime()
+}
+
+export async function ensureFreshSession(): Promise<Session | null> {
+  const session = getSession()
+  if (!session) return null
+  if (!isAccessTokenExpired(session, REFRESH_BUFFER_MS)) return session
+  if (!session.refreshToken) {
+    clearSession()
+    return null
+  }
+  try {
+    const token = await refreshAccessToken(session.refreshToken)
+    const updated: Session = {
+      ...session,
+      token: token.access_token,
+      refreshToken: token.refresh_token ?? session.refreshToken,
+      expiresAt: new Date(Date.now() + token.expires_in * 1000).toISOString(),
+    }
+    persistSession(updated)
+    return updated
+  } catch {
+    clearSession()
+    return null
+  }
+}
+
+/** Silent cross-app SSO: bootstrap a session from the shared identity-lite cookie. */
+export async function attemptSilentSso(): Promise<Session | null> {
+  const existing = getSession()
+  if (existing) return existing
+  try {
+    const token = await bootstrapSsoSession()
+    if (!token?.access_token) return null
+    return await finalize(token, '')
+  } catch {
+    return null
+  }
+}
+
+/** Enrol a passkey for the currently signed-in user. */
+export async function registerPasskey(label?: string): Promise<void> {
+  const session = getSession()
+  if (!session?.token) throw new Error('not_authenticated')
+  await enrollPasskey(session.token, label)
+}
+
+/** Sign in with a passkey (usernameless / discoverable). */
+export async function loginWithPasskey(): Promise<Session> {
+  const token = await authenticateWithPasskey()
+  return finalize(token, '')
+}
+
+export function logout(): void {
+  const session = getSession()
+  clearSession()
+  void revokeServerSession(session?.refreshToken)
+}
+
+export async function logoutAsync(): Promise<void> {
+  const session = getSession()
+  clearSession()
+  await revokeServerSession(session?.refreshToken)
 }

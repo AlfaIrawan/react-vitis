@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, User, Mail, Shield, Clock, Globe, Palette } from 'lucide-react'
+import { LogOut, User, Mail, Shield, Clock, Globe, Palette, Fingerprint } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { getSession, logout, requireAuth, type Session } from '@/auth/authService'
+import { getSession, logout, requireAuth, registerPasskey, type Session } from '@/auth/authService'
+import { passkeyErrorMessage } from '@/lib/api/webauthnApi'
 import { useThemeStore } from '@/stores/theme-store'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,21 @@ export function ProfilePage() {
   const { theme, setTheme } = useThemeStore()
   const [session, setSession] = useState<Session | null>(null)
   const [language, setLanguage] = useState('Indonesian')
+  const [passkeyBusy, setPasskeyBusy] = useState(false)
+  const [passkeyMsg, setPasskeyMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const handleAddPasskey = async () => {
+    setPasskeyBusy(true)
+    setPasskeyMsg(null)
+    try {
+      await registerPasskey()
+      setPasskeyMsg({ ok: true, text: 'Passkey added. You can now sign in with it on this device.' })
+    } catch (err) {
+      setPasskeyMsg({ ok: false, text: passkeyErrorMessage(err, 'enroll') })
+    } finally {
+      setPasskeyBusy(false)
+    }
+  }
 
   // Load session and redirect if not authenticated
   useEffect(() => {
@@ -219,6 +235,32 @@ export function ProfilePage() {
             <p className="text-xs text-muted-foreground">
               Token sesi saat ini (dummy, non-operasional)
             </p>
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Passkey</p>
+                <p className="text-xs text-muted-foreground">
+                  Add a passkey to sign in with your fingerprint / PIN — no password.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0 gap-2"
+                onClick={() => void handleAddPasskey()}
+                disabled={passkeyBusy}
+              >
+                <Fingerprint className="w-4 h-4" />
+                {passkeyBusy ? 'Adding…' : 'Add passkey'}
+              </Button>
+            </div>
+            {passkeyMsg && (
+              <p className={cn('text-xs', passkeyMsg.ok ? 'text-emerald-600' : 'text-destructive')}>
+                {passkeyMsg.text}
+              </p>
+            )}
           </div>
           <Separator />
           <div>

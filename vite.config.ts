@@ -17,6 +17,17 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/project-service/, ''),
       },
+      // Identity Lite (OIDC + WebAuthn) on :8430. OIDC lives at /oauth2/*, /webauthn/*;
+      // REST admin/register keeps the /api/identity-lite/v1 prefix.
+      '/api/identity-lite': {
+        target: 'http://localhost:8430',
+        changeOrigin: true,
+        ws: true,
+        rewrite: (p) =>
+          p.startsWith('/api/identity-lite/v1')
+            ? p
+            : p.replace(/^\/api\/identity-lite/, ''),
+      },
     },
   },
   resolve: {

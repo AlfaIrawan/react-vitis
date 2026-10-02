@@ -1,10 +1,12 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react'
+import { Eye, EyeOff, Fingerprint } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { login, isAuthenticated, getDemoAccounts } from '@/auth/authService'
+import { login, ensureFreshSession, attemptSilentSso, loginWithPasskey } from '@/auth/authService'
+import { passkeyErrorMessage } from '@/lib/api/webauthnApi'
+import { isSocialProviderEnabled, startSocialOAuthLogin } from '@/lib/authProviders'
 import { cn } from '@/lib/utils'
 
 export function LoginPage() {
@@ -13,38 +15,32 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showDemoAccounts, setShowDemoAccounts] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const next = searchParams.get('next') || '/projects'
+  const next = searchParams.get('next') || '/'
+  const microsoftEnabled = isSocialProviderEnabled('microsoft')
 
-  // Redirect if already authenticated
+  // Already-signed-in / silent SSO → skip the login screen.
   useEffect(() => {
-    if (isAuthenticated()) {
-      navigate(next, { replace: true })
+    let cancelled = false
+    void ensureFreshSession()
+      .then(async (s) => s ?? (await attemptSilentSso()))
+      .then((s) => {
+        if (!cancelled && s) navigate(next, { replace: true })
+      })
+    return () => {
+      cancelled = true
     }
   }, [navigate, next])
-
-  // Email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const isEmailValid = email.length === 0 || emailRegex.test(email)
-  const isPasswordValid = password.length > 0
-  const isFormValid = isEmailValid && isPasswordValid && !isSubmitting
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
-
-    if (!isFormValid) {
-      return
-    }
-
+    if (!email.trim() || !password) return
     setIsSubmitting(true)
-
     try {
-      login(email, password)
-      // Navigate to intended destination or default to /projects
+      await login(email, password)
       navigate(next, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
@@ -53,145 +49,138 @@ export function LoginPage() {
     }
   }
 
-  const demoAccounts = getDemoAccounts()
+  const handlePasskeyLogin = async () => {
+    setError('')
+    setIsSubmitting(true)
+    try {
+      await loginWithPasskey()
+      navigate(next, { replace: true })
+    } catch (err) {
+      setError(passkeyErrorMessage(err, 'signin'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleMicrosoft = async () => {
+    setError('')
+    try {
+      await startSocialOAuthLogin('microsoft')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Microsoft sign-in is unavailable.')
+    }
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Login Card */}
-        <div className="glass-card rounded-lg shadow-2xl p-8 space-y-6">
-          {/* Header */}
-          <div className="space-y-2 text-center">
-            <img
-              src="/images/logo.png"
-              alt="Vitis"
-              className="mx-auto h-24 w-auto object-contain"
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-muted/40 via-background to-background px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/90 p-6 shadow-xl backdrop-blur-sm sm:p-8">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-foreground">VITIS</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="username"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setError('')
+              }}
+              className="h-10 rounded-xl"
             />
-            <p className="text-sm text-muted-foreground">
-              Sign in to your account
-            </p>
           </div>
 
-          {/* Error Alert */}
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
               <Input
-                id="email"
-                type="email"
-                placeholder="admin@vitis.local"
-                value={email}
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                value={password}
                 onChange={(e) => {
-                  setEmail(e.target.value)
+                  setPassword(e.target.value)
                   setError('')
                 }}
-                className={cn(
-                  !isEmailValid && email.length > 0 && 'border-destructive focus-visible:ring-destructive'
-                )}
-                disabled={isSubmitting}
-                autoComplete="email"
-                required
+                className="h-10 rounded-xl pr-10"
               />
-              {!isEmailValid && email.length > 0 && (
-                <p className="text-xs text-destructive">Please enter a valid email address</p>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setError('')
-                  }}
-                  disabled={isSubmitting}
-                  autoComplete="current-password"
-                  required
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                  disabled={isSubmitting}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!isFormValid}
-            >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </form>
-
-          {/* Demo Accounts Helper */}
-          <div className="border-t border-border/40 pt-4">
-            <button
-              type="button"
-              onClick={() => setShowDemoAccounts(!showDemoAccounts)}
-              className="w-full flex items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>Demo Accounts</span>
-              {showDemoAccounts ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
-
-            {showDemoAccounts && (
-              <div className="mt-3 space-y-2 p-3 bg-muted/30 rounded-md text-xs">
-                {demoAccounts.map((account) => (
-                  <div
-                    key={account.email}
-                    className="flex items-center justify-between py-1.5 px-2 hover:bg-muted/50 rounded transition-colors cursor-pointer"
-                    onClick={() => {
-                      setEmail(account.email)
-                      setPassword(account.password)
-                      setShowDemoAccounts(false)
-                    }}
-                  >
-                    <div>
-                      <div className="font-medium text-foreground">{account.name}</div>
-                      <div className="text-muted-foreground">{account.email}</div>
-                    </div>
-                    <div className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
-                      {account.role}
-                    </div>
-                  </div>
-                ))}
-                <p className="text-muted-foreground/70 pt-2 border-t border-border/30 mt-2">
-                  Click any account to fill the form
-                </p>
-              </div>
-            )}
           </div>
-        </div>
+
+          <Button type="submit" className="h-10 w-full rounded-xl" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in…' : 'Sign in'}
+          </Button>
+        </form>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3 h-10 w-full gap-2 rounded-xl"
+          onClick={() => void handlePasskeyLogin()}
+          disabled={isSubmitting}
+        >
+          <Fingerprint className="h-4 w-4" />
+          Sign in with a passkey
+        </Button>
+
+        {microsoftEnabled && (
+          <>
+            <div className="my-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              Or continue with
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 w-full gap-2 rounded-xl"
+              onClick={() => void handleMicrosoft()}
+            >
+              <span
+                className="inline-grid h-4 w-4 shrink-0 grid-cols-2 gap-[1px]"
+                aria-hidden
+              >
+                <span className="bg-[#f25022]" />
+                <span className="bg-[#7fba00]" />
+                <span className="bg-[#00a4ef]" />
+                <span className="bg-[#ffb900]" />
+              </span>
+              Sign in with Microsoft
+            </Button>
+          </>
+        )}
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{' '}
+          <button
+            type="button"
+            className={cn('font-medium text-primary hover:underline')}
+            onClick={() => navigate('/register')}
+          >
+            Sign up
+          </button>
+        </p>
       </div>
     </div>
   )

@@ -5,6 +5,8 @@ import { PlaceholderPage, module1Routes } from './modules/core-shell/components/
 import { ToastProvider } from './components/ui/toast'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { LoginPage } from './pages/Login'
+import { RegisterPage } from './pages/Register'
+import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { ProfilePage } from './pages/Profile'
 import { DashboardPage } from './modules/dashboard'
 import { ProjectListPage, ProjectDetailPage } from './modules/projects'
@@ -43,6 +45,8 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login/oauth/callback" element={<OAuthCallbackPage />} />
             <Route
               path="/"
               element={
