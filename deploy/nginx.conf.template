@@ -1,0 +1,50 @@
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    client_max_body_size 50m;
+
+    proxy_http_version 1.1;
+    proxy_set_header Host $proxy_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 'ok\n';
+    }
+
+    location /api/project-service/ { proxy_pass ${PROJECT_UPSTREAM}/; }
+    # Identity REST keeps its prefix; OAuth2/WebAuthn endpoints strip it.
+    location /api/identity-lite/v1 { proxy_pass ${IDENTITY_UPSTREAM}; }
+    location /api/identity-lite/ { proxy_pass ${IDENTITY_UPSTREAM}/; }
+    location /api/gateway-runtime/ { proxy_pass ${GATEWAY_UPSTREAM}/; }
+    location /api/notification-service/ { proxy_pass ${NOTIFICATION_UPSTREAM}/; }
+    location /api/todo-service/ { proxy_pass ${TODO_UPSTREAM}/; }
+    location /api/registry-service/ { proxy_pass ${REGISTRY_UPSTREAM}/; }
+    location /api/connector-service/ { proxy_pass ${CONNECTOR_UPSTREAM}/; }
+    location /api/dataset-service/ { proxy_pass ${DATASET_UPSTREAM}/; }
+    location /api/base-model-service/ { proxy_pass ${BASE_MODEL_UPSTREAM}/; }
+
+    # Never serve index.html for an unrecognised API endpoint.
+    location /api/ { return 404; }
+    location /assets/ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control 'public, immutable';
+    }
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control 'no-cache';
+    }
+}

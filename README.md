@@ -25,6 +25,8 @@ Login demo: `admin@vitis.local` / `admin`
 
 ## Build
 
+CI/CD TeamCity dan deployment Docker ke server Linux: lihat [panduan TeamCity](deploy/TEAMCITY.md).
+
 Karena path folder induk mengandung karakter `&`, di Windows gunakan perintah dalam tanda kutip:
 
 ```cmd

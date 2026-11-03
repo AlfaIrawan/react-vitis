@@ -1,0 +1,15 @@
+**
+!package.json
+!package-lock.json
+!index.html
+!vite.config.ts
+!tsconfig*.json
+!postcss.config.js
+!tailwind.config.js
+!src/
+!src/**
+!public/
+!public/**
+!deploy/
+!deploy/frontend.env
+!deploy/nginx.conf.template

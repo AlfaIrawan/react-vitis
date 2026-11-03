@@ -70,3 +70,10 @@ Desktop.ini
 .vercel
 .netlify
 .firebase
+
+# Local deployment configuration and TeamCity artifacts
+deploy/frontend.env
+deploy/server.env
+ci-in/
+ci-out/
+.teamcity/target/

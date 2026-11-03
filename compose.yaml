@@ -1,0 +1,29 @@
+name: vitis
+services:
+  web:
+    image: vitis-web:${VITIS_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${VITIS_BIND_ADDRESS:-0.0.0.0}:${VITIS_PORT:-5182}:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Restrict template substitution so Nginx variables remain intact.
+      NGINX_ENVSUBST_FILTER: '.*_UPSTREAM'
+      PROJECT_UPSTREAM: ${PROJECT_UPSTREAM:-http://host.docker.internal:8500}
+      IDENTITY_UPSTREAM: ${IDENTITY_UPSTREAM:-http://host.docker.internal:8430}
+      GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM:-http://host.docker.internal:8084}
+      NOTIFICATION_UPSTREAM: ${NOTIFICATION_UPSTREAM:-http://host.docker.internal:8700}
+      TODO_UPSTREAM: ${TODO_UPSTREAM:-http://host.docker.internal:8650}
+      REGISTRY_UPSTREAM: ${REGISTRY_UPSTREAM:-http://host.docker.internal:8405}
+      CONNECTOR_UPSTREAM: ${CONNECTOR_UPSTREAM:-http://host.docker.internal:8400}
+      DATASET_UPSTREAM: ${DATASET_UPSTREAM:-http://host.docker.internal:8600}
+      BASE_MODEL_UPSTREAM: ${BASE_MODEL_UPSTREAM:-http://host.docker.internal:8502}
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
