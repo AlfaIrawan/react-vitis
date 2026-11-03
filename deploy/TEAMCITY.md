@@ -52,6 +52,15 @@ Broker memerlukan container awal untuk menyimpan konfigurasi dan menyediakan ima
 
 ## 2. Import konfigurasi TeamCity
 
+Instalasi Dev sudah memiliki konfigurasi operasional di [Wakatobi Vitis](http://10.100.0.143:8111/project/WakatobiVitis):
+
+- VCS root: `WakatobiVitis_ReactVitis`, repository GitHub di bawah, branch `master`.
+- Build: `WakatobiVitis_VitisBuild` (**Vitis - Build image**).
+- Deploy: `WakatobiVitis_VitisDeploy` (**Vitis - Deploy server**), snapshot dan artifact dari build pada chain yang sama.
+- Agent: `teamcity-agent`, dengan ketiga parameter `vitis.*` sudah terpasang.
+
+Build configuration aktif disimpan di TeamCity; script build/deploy diambil dari Git pada setiap build. `.teamcity/settings.kts` menyediakan definisi Kotlin yang setara untuk import atau pemasangan ulang; sinkronisasi Versioned Settings belum diaktifkan. Langkah di bawah berlaku untuk instalasi ulang atau bila ingin mengaktifkan sinkronisasi tersebut.
+
 1. Commit dan push `.teamcity/`, `Dockerfile`, `.dockerignore`, `.gitattributes`, `deploy/`, `scripts/teamcity/`, `.gitignore`, serta perubahan aplikasi yang ingin dirilis. File pipeline lokal belum tersedia pada checkout Git server sampai di-push. Jangan commit `.env` lokal, key SSH, `deploy/server.env`, atau `deploy/frontend.env`.
 2. Buat project dari `https://github.com/AlfaIrawan/react-vitis.git`, default branch `refs/heads/master`. Checkout root harus repository `react-vitis` ini.
 3. Aktifkan **Versioned Settings**, format **Kotlin**, direktori `.teamcity`, lalu **Load project settings from VCS**. DSL memakai `DslContext.settingsRoot`.
