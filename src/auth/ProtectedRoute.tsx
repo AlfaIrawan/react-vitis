@@ -1,3 +1,4 @@
+import { PlatformRouteLoadingFallback } from '@/components/loading/PlatformRouteLoadingFallback'
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { ensureFreshSession, attemptSilentSso } from './authService'
@@ -15,7 +16,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     let cancelled = false
     ensureFreshSession()
       .then(async (session) => {
-        // No local session yet — try silent cross-app SSO before redirecting to login.
+        // No local session yet â€” try silent cross-app SSO before redirecting to login.
         const resolved = session ?? (await attemptSilentSso())
         if (!cancelled) {
           setAuthenticated(resolved != null)
@@ -36,7 +37,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading…
+        Loadingâ€¦
       </div>
     )
   }

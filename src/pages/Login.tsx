@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Fingerprint } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -75,7 +75,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-muted/40 via-background to-background px-4 py-10">
       <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/90 p-6 shadow-xl backdrop-blur-sm sm:p-8">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-foreground">VITIS</h1>
+          <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation" className="mx-auto h-24 max-w-full w-auto object-contain" />
           <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
         </div>
 

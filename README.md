@@ -1,6 +1,6 @@
 # Vitis — react-vitis
 
-**Integration & Process Orchestration Management** — antarmuka web (React + Vite) dengan pola UI/UX Digicorp yang selaras antar platform, namun **bukan** platform AI Lifecycle.
+Vitis adalah frontend React dan Vite untuk integrasi dan orkestrasi proses. Rebuild ini memakai fondasi UI React Tectona dari revisi `ebcb6fc` dan memulihkan fitur Vitis dari backup sebelum migrasi.
 
 ## Capability Vitis
 
@@ -9,10 +9,18 @@
 | **Workspaces** | Proyek sebagai ruang kerja orkestrasi |
 | **Integrations** | Konektor ke API, layanan, sumber data |
 | **Workflows** | Definisi alur proses |
-| **Executions** | Menjalankan / memantau instansi alur |
+| **Executions** | Meninjau status dan hasil eksekusi yang tersedia di Vitis |
 | **Schedules / Policies** | Placeholder untuk jadwal & kebijakan integrasi |
 
-Menu global **Models, Feedback, Governance, Portfolio** (AI Lifecycle) **tidak** tersedia; URL lama dialihkan ke workspace atau monitor.
+## Hasil asesmen baseline
+
+| Bagian | Keputusan |
+|---|---|
+| Tema, komponen UI, indikator loading, dan penanganan error Tectona | Dipakai sebagai fondasi UI Vitis, dengan nama dan aset Vitis |
+| Project management, idea backlog, portfolio, planning, resource, dan dokumentasi Tectona | Dikeluarkan karena berfokus pada pengelolaan proyek Tectona |
+| Integrasi, workflow automation, dan monitoring Tectona | Kebutuhannya relevan. Vitis mempertahankan implementasi dan data kontraknya sendiri agar workspace, konektor, workflow, dan riwayat yang sudah ada tetap terbaca |
+| Login, register, profil, notifikasi, dan todo | Dipulihkan dari Vitis. Kontrak Identity Lite yang dipakai bersama tetap menggunakan konfigurasi backend yang sudah ada |
+| Model registry, deployment model, feedback, dan governance AI | Source halaman dan aksi AI lifecycle dibuang. Adapter dataset, trainer, dan compute dipertahankan untuk kompatibilitas rekaman eksekusi lama |
 
 ## Menjalankan
 
@@ -21,7 +29,7 @@ npm install
 npm run dev
 ```
 
-Login demo: `admin@vitis.local` / `admin`
+Login menggunakan akun Identity Lite sesuai konfigurasi environment Vitis.
 
 ## Build
 

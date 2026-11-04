@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { normalizeAccent } from '@/lib/vitisThemes'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { useThemeStore } from '@/stores/theme-store'
@@ -22,8 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { panel: settingsPanel, closePanel } = useSettingsPanelStore()
   const { theme } = useThemeStore()
   const rawAccent = usePreferencesStore((s) => s.preferences?.accentColor)
-  const validAccents = ['gradient', 'deep-cosmic', 'indigo-command', 'frosted-steel', 'blue-granite']
-  const accentColor = validAccents.includes(rawAccent as string) ? rawAccent : 'gradient'
+  const accentColor = normalizeAccent(rawAccent)
 
   const themeSettingsOpen = settingsPanel === 'theme'
   const todoPanelOpen = settingsPanel === 'todo'

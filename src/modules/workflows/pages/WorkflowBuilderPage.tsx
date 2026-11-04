@@ -9,33 +9,32 @@ import ReactFlow, {
   useEdgesState,
   type Connection,
   type Node,
-  type Edge,
-  Panel,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { Save, CheckCircle2, AlertCircle, Copy, Download, Upload, Play, ArrowLeft, Eye } from 'lucide-react'
+import { Save, CheckCircle2, AlertCircle, Copy, Upload, Play, ArrowLeft, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/toast'
 import { notifyEvent } from '@/lib/api/notificationApi'
 import { useActiveProjectStore } from '@/stores/active-project-store'
+import { WorkflowRoutedEdge, WorkflowRoutingContext } from '../components/WorkflowRoutedEdge'
+import { setWorkflowWaypoint, type WorkflowWaypoint } from '../utils/edgeRouting'
 import { WorkflowNode } from '../components/WorkflowNode'
 import { NodeCatalogPalette } from '../components/NodeCatalogPalette'
 import { NodeInspector } from '../components/NodeInspector'
-import type { CatalogNode } from '../catalog/nodeCatalog'
-import type { CatalogNodeData } from '../types'
+import { getNodeById, type CatalogNode } from '../catalog/nodeCatalog'
+import type { CatalogNodeData, WorkflowDefinition } from '../types'
 import { validateWorkflow } from '../utils/workflowValidator'
 import {
   getWorkflow,
   createWorkflow,
   updateWorkflow,
-  getWorkflowForReference,
   getReferencedWorkflows,
-  type WorkflowDefinition,
 } from '../utils/workflowStorage'
 import { getGroup } from '../utils/workflowGroupStorage'
 import type { WorkflowNodeData, WorkflowNode as WorkflowNodeType } from '../types'
-import { cn } from '@/lib/utils'
+
+const edgeTypes = { default: WorkflowRoutedEdge }
 
 const nodeTypes = {
   custom: WorkflowNode,
@@ -66,7 +65,10 @@ export function WorkflowBuilderPage() {
   useEffect(() => {
     if (!projectIdToUse) return
 
+    setSelectedNode(null)
+    setWorkflowGroup(null)
     if (isNew) {
+      setWorkflow(null)
       setWorkflowName('Untitled Workflow')
       setNodes([])
       setEdges([])
@@ -89,7 +91,7 @@ export function WorkflowBuilderPage() {
       if (loaded) {
         setWorkflow(loaded)
         setWorkflowName(loaded.name)
-        setNodes(loaded.nodes as any)
+        setNodes(loaded.nodes)
         setEdges(loaded.edges)
         // Check if this is a referenced workflow (read-only)
         const isReferenced = isReference || (loaded.ownerProjectId !== projectIdToUse)
@@ -119,11 +121,11 @@ export function WorkflowBuilderPage() {
 
     const tempWorkflow: WorkflowDefinition = {
       id: workflow?.id || 'temp',
-      projectId: projectIdToUse,
+      ownerProjectId: workflow?.ownerProjectId ?? projectIdToUse,
       name: workflowName,
       version: workflow?.version || 1,
       status: workflow?.status || 'draft',
-      nodes: nodes as any,
+      nodes,
       edges,
       createdAt: workflow?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -132,6 +134,10 @@ export function WorkflowBuilderPage() {
     const result = validateWorkflow(tempWorkflow)
     setValidationResult(result)
   }, [nodes, edges, projectIdToUse, workflowName, workflow])
+
+  const updateWaypoint = useCallback((id: string, point?: WorkflowWaypoint) => {
+    setEdges((current) => setWorkflowWaypoint(current, id, point))
+  }, [setEdges])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -162,7 +168,6 @@ export function WorkflowBuilderPage() {
         const parsed = JSON.parse(dataStr)
         if (parsed.type === 'catalog') {
           // Catalog node
-          const { getNodeById } = require('../catalog/nodeCatalog')
           const catalogNode = getNodeById(parsed.catalogNodeId)
           if (!catalogNode) return
 
@@ -223,7 +228,7 @@ export function WorkflowBuilderPage() {
   const handleNodeUpdate = useCallback(
     (nodeId: string, data: Partial<WorkflowNodeData>) => {
       setNodes((nds) =>
-        nds.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node))
+        nds.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, ...data } as WorkflowNodeData } : node))
       )
       if (selectedNode?.id === nodeId) {
         setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, ...data } } as WorkflowNodeType)
@@ -238,11 +243,10 @@ export function WorkflowBuilderPage() {
       return
     }
 
-    const workflowData: Omit<WorkflowDefinition, 'id' | 'createdAt' | 'updatedAt' | 'version'> = {
-      projectId: projectIdToUse,
+    const workflowData: Omit<WorkflowDefinition, 'id' | 'createdAt' | 'updatedAt' | 'version' | 'ownerProjectId'> = {
       name: workflowName.trim(),
       status: 'draft',
-      nodes: nodes as any,
+      nodes,
       edges,
     }
 
@@ -252,10 +256,14 @@ export function WorkflowBuilderPage() {
       notifyEvent({ type_code: 'project', title: 'Workflow disimpan', body: `"${workflowName.trim()}" disimpan sebagai draft.` })
       navigate(`/projects/${projectIdToUse}/workflows/${created.id}`)
     } else {
-      updateWorkflow(projectIdToUse, workflow.id, workflowData)
+      const updated = updateWorkflow(projectIdToUse, workflow.id, workflowData)
+      if (!updated) {
+        addToast({ title: 'Workflow could not be saved', description: 'The workflow is missing or read-only.', variant: 'error' })
+        return
+      }
       addToast({ title: 'Success', description: 'Workflow saved as draft', variant: 'success' })
       notifyEvent({ type_code: 'project', title: 'Workflow disimpan', body: `"${workflowName.trim()}" disimpan sebagai draft.` })
-      setWorkflow(getWorkflow(projectIdToUse, workflow.id))
+      setWorkflow(updated)
     }
   }, [projectIdToUse, workflowName, nodes, edges, isNew, workflow, navigate, addToast])
 
@@ -274,11 +282,10 @@ export function WorkflowBuilderPage() {
       return
     }
 
-    const workflowData: Omit<WorkflowDefinition, 'id' | 'createdAt' | 'updatedAt' | 'version'> = {
-      projectId: projectIdToUse,
+    const workflowData: Omit<WorkflowDefinition, 'id' | 'createdAt' | 'updatedAt' | 'version' | 'ownerProjectId'> = {
       name: workflowName.trim(),
       status: 'published',
-      nodes: nodes as any,
+      nodes,
       edges,
     }
 
@@ -446,43 +453,47 @@ export function WorkflowBuilderPage() {
 
         {/* Center: React Flow Canvas */}
         <div className="flex-1 glass-card rounded-xl overflow-hidden" ref={reactFlowWrapper}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={isReadOnly ? undefined : onConnect}
-            onInit={setReactFlowInstance}
-            onDrop={isReadOnly ? undefined : onDrop}
-            onDragOver={isReadOnly ? undefined : onDragOver}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            nodeTypes={nodeTypes}
-            nodesDraggable={!isReadOnly}
-            nodesConnectable={!isReadOnly}
-            elementsSelectable={!isReadOnly}
-            fitView
-            className="bg-background"
-          >
-            <Background />
-            <Controls />
-            <MiniMap
-              nodeColor={(node) => {
-                const type = (node.data as WorkflowNodeData).type
-                const colors: Record<string, string> = {
-                  dataset: '#3b82f6',
-                  'base-model': '#a855f7',
-                  trainer: '#6366f1',
-                  compute: '#f97316',
-                  'train-step': '#10b981',
-                  'evaluate-step': '#06b6d4',
-                  'register-step': '#ec4899',
-                  'deploy-step': '#f59e0b',
-                }
-                return colors[type] || '#gray'
-              }}
-            />
-          </ReactFlow>
+          <WorkflowRoutingContext.Provider value={isReadOnly ? null : updateWaypoint}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={isReadOnly ? undefined : onConnect}
+              onInit={setReactFlowInstance}
+              onDrop={isReadOnly ? undefined : onDrop}
+              onDragOver={isReadOnly ? undefined : onDragOver}
+              onNodeClick={onNodeClick}
+              onPaneClick={onPaneClick}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              deleteKeyCode={isReadOnly ? null : 'Backspace'}
+              nodesDraggable={!isReadOnly}
+              nodesConnectable={!isReadOnly}
+              elementsSelectable={!isReadOnly}
+              fitView
+              className="bg-background"
+            >
+              <Background />
+              <Controls />
+              <MiniMap
+                nodeColor={(node) => {
+                  const type = (node.data as WorkflowNodeData).type
+                  const colors: Record<string, string> = {
+                    dataset: '#3b82f6',
+                    'base-model': '#a855f7',
+                    trainer: '#6366f1',
+                    compute: '#f97316',
+                    'train-step': '#10b981',
+                    'evaluate-step': '#06b6d4',
+                    'register-step': '#ec4899',
+                    'deploy-step': '#f59e0b',
+                  }
+                  return colors[type] || '#gray'
+                }}
+              />
+            </ReactFlow>
+          </WorkflowRoutingContext.Provider>
         </div>
 
         {/* Right: Node Inspector */}

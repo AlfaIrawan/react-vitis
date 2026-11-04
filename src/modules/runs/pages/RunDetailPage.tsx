@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { ArrowLeft, Calendar, Edit, Trash2 } from 'lucide-react'
 import { useRunStore } from '@/modules/runs'
 import { useProjectStore } from '@/modules/projects'
@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useToast } from '@/components/ui/toast'
 
 export function RunDetailPage() {
@@ -48,8 +48,7 @@ export function RunDetailPage() {
 
   // Redirect FINAL status runs to Results page (Module 6)
   if (run && (run.status === 'completed' || run.status === 'failed' || run.status === 'cancelled')) {
-    navigate(`/runs/${run.id}/results`, { replace: true })
-    return null
+    return <Navigate to={`/projects/${run.projectId}/runs/${run.id}/results`} replace />
   }
 
   if (!run) {

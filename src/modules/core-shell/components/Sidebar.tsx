@@ -4,9 +4,9 @@ import {
   FolderOpen,
   ChevronLeft,
   ChevronRight,
-  GitBranch,
   Plug,
   Activity,
+  Workflow,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -21,6 +21,7 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: FolderOpen, label: 'Workspaces', path: '/projects' },
   { icon: Plug, label: 'Integration catalog', path: '/integrations' },
+  { icon: Workflow, label: 'Workflow designer', path: '/workflows' },
   { icon: Activity, label: 'Process monitor', path: '/monitor' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ]
@@ -44,12 +45,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between h-12 px-2 border-b border-gray-200">
           {!collapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center">
-                <GitBranch className="h-4 w-4 text-emerald-600" />
-              </div>
-              <h1 className="text-sm font-semibold text-gray-900">Vitis</h1>
-            </div>
+            <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation" className="h-10 w-auto max-w-[calc(100%-2rem)] object-contain" />
           )}
           <button
             onClick={onToggle}

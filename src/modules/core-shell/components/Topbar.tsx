@@ -24,7 +24,7 @@ interface TopbarProps {
   onToggleTodoPanel?: () => void
 }
 
-export function Topbar({ sidebarCollapsed, accentColor, onToggleThemeSettings, onToggleTodoPanel }: TopbarProps) {
+export function Topbar({ sidebarCollapsed, onToggleThemeSettings, onToggleTodoPanel }: TopbarProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -67,9 +67,9 @@ export function Topbar({ sidebarCollapsed, accentColor, onToggleThemeSettings, o
         {/* Left Side: Logo + pembatas + nama tenant */}
         <div className="flex items-center gap-3">
           <img
-            src={accentColor === 'deep-cosmic' || accentColor === 'blue-granite' ? '/images/logo-white.png' : '/images/logo.png'}
-            alt="Vitis"
-            className="h-12 w-auto object-contain"
+            src="/images/vitis-wordmark.svg"
+            alt="Vitis — AI Workflow Automation"
+            className="h-10 w-auto shrink-0 object-contain"
           />
           <div
             className="topbar-tenant-sep h-6 w-px flex-shrink-0 bg-slate-300"

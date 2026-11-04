@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { ArrowLeft, Calendar, Clock, AlertCircle, XCircle } from 'lucide-react'
 import { useRunStore } from '@/modules/runs'
 import { useProjectStore } from '@/modules/projects'
@@ -8,7 +8,8 @@ import { PerformanceCharts } from '../components/PerformanceCharts'
 import { EvaluationBreakdown } from '../components/EvaluationBreakdown'
 import { RunComparison } from '../components/RunComparison'
 import { ArtifactsOutputs } from '../components/ArtifactsOutputs'
-import { NextActions } from '../components/NextActions'
+import { useTrainerStore } from '@/modules/trainers'
+import { useComputeStore } from '@/modules/compute'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -21,7 +22,9 @@ import { Button } from '@/components/ui/button'
 export function RunResultsDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getRun, runs } = useRunStore()
+  const { getRun, runs, getDataset } = useRunStore()
+  const getTrainer = useTrainerStore((state) => state.getTrainer)
+  const getCompute = useComputeStore((state) => state.getCompute)
   const { getProject } = useProjectStore()
 
   const run = id ? getRun(id) : undefined
@@ -42,8 +45,7 @@ export function RunResultsDetailPage() {
 
   // Redirect non-FINAL status runs to regular detail page
   if (run.status !== 'completed' && run.status !== 'failed' && run.status !== 'cancelled') {
-    navigate(`/runs/${run.id}`)
-    return null
+    return <Navigate to={`/projects/${run.projectId}/runs/${run.id}`} replace />
   }
 
   // If no result data, show placeholder
@@ -190,7 +192,6 @@ export function RunResultsDetailPage() {
       <ArtifactsOutputs artifacts={run.resultData.artifacts} />
 
       {/* Next Actions - Only for completed runs */}
-      <NextActions run={run} />
     </div>
   )
 }
