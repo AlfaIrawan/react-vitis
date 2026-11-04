@@ -1,3 +1,4 @@
+import { AuthPageLayout, authCardButtonClass, authCardInputClass } from '@/modules/auth/AuthPageLayout'
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Fingerprint } from 'lucide-react'
@@ -72,116 +73,114 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-muted/40 via-background to-background px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/90 p-6 shadow-xl backdrop-blur-sm sm:p-8">
-        <div className="mb-6 text-center">
-          <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation" className="mx-auto h-24 max-w-full w-auto object-contain" />
-          <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+    <AuthPageLayout>
+      <div id="login-card-header" className="space-y-2 text-center">
+        <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation" className="mx-auto h-24 max-w-full w-auto object-contain" />
+        <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+      </div>
+
+      {error && (
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="username"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setError('')
+            }}
+            className={authCardInputClass}
+          />
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
             <Input
-              id="email"
-              type="email"
-              autoComplete="username"
-              placeholder="you@company.com"
-              value={email}
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              placeholder="Enter your password"
+              value={password}
               onChange={(e) => {
-                setEmail(e.target.value)
+                setPassword(e.target.value)
                 setError('')
               }}
-              className="h-10 rounded-xl"
+              className={authCardInputClass + " pr-11"}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setError('')
-                }}
-                className="h-10 rounded-xl pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          <Button type="submit" className="h-10 w-full rounded-xl" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </form>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-3 h-10 w-full gap-2 rounded-xl"
-          onClick={() => void handlePasskeyLogin()}
-          disabled={isSubmitting}
-        >
-          <Fingerprint className="h-4 w-4" />
-          Sign in with a passkey
-        </Button>
-
-        {microsoftEnabled && (
-          <>
-            <div className="my-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              Or continue with
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <Button
+            <button
               type="button"
-              variant="outline"
-              className="h-10 w-full gap-2 rounded-xl"
-              onClick={() => void handleMicrosoft()}
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-0 top-1/2 flex h-10 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              <span
-                className="inline-grid h-4 w-4 shrink-0 grid-cols-2 gap-[1px]"
-                aria-hidden
-              >
-                <span className="bg-[#f25022]" />
-                <span className="bg-[#7fba00]" />
-                <span className="bg-[#00a4ef]" />
-                <span className="bg-[#ffb900]" />
-              </span>
-              Sign in with Microsoft
-            </Button>
-          </>
-        )}
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{' '}
-          <button
+        <Button type="submit" className={authCardButtonClass} disabled={isSubmitting}>
+          {isSubmitting ? 'Signing in…' : 'Sign in'}
+        </Button>
+      </form>
+
+      <Button
+        type="button"
+        variant="outline"
+        className={authCardButtonClass}
+        onClick={() => void handlePasskeyLogin()}
+        disabled={isSubmitting}
+      >
+        <Fingerprint className="h-4 w-4" />
+        Sign in with a passkey
+      </Button>
+
+      {microsoftEnabled && (
+        <>
+          <div className="my-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            Or continue with
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <Button
             type="button"
-            className={cn('font-medium text-primary hover:underline')}
-            onClick={() => navigate('/register')}
+            variant="outline"
+            className={authCardButtonClass}
+            onClick={() => void handleMicrosoft()}
           >
-            Sign up
-          </button>
-        </p>
-      </div>
-    </div>
+            <span
+              className="inline-grid h-4 w-4 shrink-0 grid-cols-2 gap-[1px]"
+              aria-hidden
+            >
+              <span className="bg-[#f25022]" />
+              <span className="bg-[#7fba00]" />
+              <span className="bg-[#00a4ef]" />
+              <span className="bg-[#ffb900]" />
+            </span>
+            Sign in with Microsoft
+          </Button>
+        </>
+      )}
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{' '}
+        <button
+          type="button"
+          className={cn('font-medium text-primary hover:underline')}
+          onClick={() => navigate('/register')}
+        >
+          Sign up
+        </button>
+      </p>
+    </AuthPageLayout>
   )
 }

@@ -1,3 +1,4 @@
+import { AuthPageLayout, authCardButtonClass, authCardInputClass } from '@/modules/auth/AuthPageLayout'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
@@ -42,107 +43,105 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-muted/40 via-background to-background px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/90 p-6 shadow-xl backdrop-blur-sm sm:p-8">
-        <div className="mb-6 text-center">
-          <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation" className="mx-auto h-24 max-w-full w-auto object-contain" />
-          <p className="mt-1 text-sm text-muted-foreground">Create your account</p>
+    <AuthPageLayout register>
+      <div id="register-card-header" className="space-y-2 text-center">
+        <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation" className="mx-auto h-24 max-w-full w-auto object-contain" />
+        <p className="mt-1 text-sm text-muted-foreground">Create your account</p>
+      </div>
+
+      {error && (
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Full name</Label>
+          <Input
+            id="name"
+            type="text"
+            autoComplete="name"
+            placeholder="Your name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            className={authCardInputClass}
+          />
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </div>
-        )}
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="username"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setError('')
+            }}
+            className={authCardInputClass}
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full name</Label>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
             <Input
-              id="name"
-              type="text"
-              autoComplete="name"
-              placeholder="Your name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="h-10 rounded-xl"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="username"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                setError('')
-              }}
-              className="h-10 rounded-xl"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
-                placeholder="At least 8 characters"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setError('')
-                }}
-                className="h-10 rounded-xl pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirm">Confirm password</Label>
-            <Input
-              id="confirm"
+              id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              placeholder="Re-enter your password"
-              value={confirm}
+              placeholder="At least 8 characters"
+              value={password}
               onChange={(e) => {
-                setConfirm(e.target.value)
+                setPassword(e.target.value)
                 setError('')
               }}
-              className="h-10 rounded-xl"
+              className={authCardInputClass + " pr-11"}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-0 top-1/2 flex h-10 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
+        </div>
 
-          <Button type="submit" className="h-10 w-full rounded-xl" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating account…' : 'Create account'}
-          </Button>
-        </form>
+        <div className="space-y-2">
+          <Label htmlFor="confirm">Confirm password</Label>
+          <Input
+            id="confirm"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            placeholder="Re-enter your password"
+            value={confirm}
+            onChange={(e) => {
+              setConfirm(e.target.value)
+              setError('')
+            }}
+            className={authCardInputClass}
+          />
+        </div>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <button
-            type="button"
-            className="font-medium text-primary hover:underline"
-            onClick={() => navigate('/login')}
-          >
-            Sign in
-          </button>
-        </p>
-      </div>
-    </div>
+        <Button type="submit" className={authCardButtonClass} disabled={isSubmitting}>
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?{' '}
+        <button
+          type="button"
+          className="font-medium text-primary hover:underline"
+          onClick={() => navigate('/login')}
+        >
+          Sign in
+        </button>
+      </p>
+    </AuthPageLayout>
   )
 }
