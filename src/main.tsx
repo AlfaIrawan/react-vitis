@@ -1,14 +1,15 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import './vitis-themes.css'
-import { normalizeAccent } from './lib/vitisThemes'
 import App from './App.tsx'
 import { initializeAnimationSpeed } from './lib/animationUtils'
 import { initTelemetry } from './lib/tracing'
 import { initRum } from './lib/rum'
+import { initUiScaleLock, syncUiScaleLock } from './lib/uiScale'
+import { normalizeAccent } from './lib/vitisThemes'
+import './vitis-themes.css'
 
-function readStoredPreference(value: string | null) {
+function readPreference(value: string | null) {
   try {
     return value ? JSON.parse(value) : null
   } catch {
@@ -18,9 +19,10 @@ function readStoredPreference(value: string | null) {
 
 // Ensure light mode is set immediately before React renders
 if (typeof window !== 'undefined') {
+  initUiScaleLock()
   // Check if user has a saved preference
   const savedTheme = localStorage.getItem('ai_monitor_theme')
-  const themeData = readStoredPreference(savedTheme)
+  const themeData = readPreference(savedTheme)
   const theme = themeData?.state?.theme || 'light'
   
   // Apply theme immediately
@@ -34,12 +36,12 @@ if (typeof window !== 'undefined') {
 
   // Initialize animation speed and accent from preferences
   const savedPreferences = localStorage.getItem('ai_monitor_preferences')
-  const preferencesData = readStoredPreference(savedPreferences)
+  const preferencesData = readPreference(savedPreferences)
   const prefs = preferencesData?.state?.preferences || {}
   const animationSpeed = prefs.animationSpeed || 300
   const fontSize = prefs.fontSize || 14
   const rawAccent = prefs.accentColor
-  const accentColor = normalizeAccent(rawAccent) ?? 'gradient'
+  const accentColor = normalizeAccent(rawAccent)
   if (accentColor) {
     document.documentElement.dataset.accent = accentColor
   }
@@ -58,6 +60,8 @@ async function bootstrap() {
       <App />
     </StrictMode>,
   )
+  syncUiScaleLock()
+  window.requestAnimationFrame(syncUiScaleLock)
   initRum()
 }
 bootstrap()

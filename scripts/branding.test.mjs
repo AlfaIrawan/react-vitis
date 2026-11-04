@@ -17,8 +17,8 @@ test('Vitis assets use the approved palette and transparent canvas', () => {
   assert.match(wordmark, /fill="#000000">AI Workflow Automation<\/text>/)
 })
 
-test('Login, register, header and sidebar use the transparent wordmark', () => {
-  for (const file of ['src/pages/Login.tsx', 'src/pages/Register.tsx', 'src/modules/core-shell/components/Topbar.tsx', 'src/modules/core-shell/components/Sidebar.tsx']) {
+test('Login, register and header use the transparent wordmark', () => {
+  for (const file of ['src/pages/Login.tsx', 'src/pages/Register.tsx', 'src/modules/core-shell/components/Topbar.tsx']) {
     const text = source(file)
     const image = text.match(/<img[^>]*src="\/images\/vitis-wordmark\.svg"[^>]*>/)?.[0]
     assert.ok(image, file)

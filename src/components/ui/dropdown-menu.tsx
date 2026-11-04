@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { enterpriseControlFocusClass } from '@/lib/enterpriseButtonClasses'
 import { cn } from '@/lib/utils'
 
 interface DropdownMenuContextType {
@@ -53,6 +54,7 @@ const DropdownMenu = React.forwardRef<
     <DropdownMenuContext.Provider value={{ open: isOpen, setOpen }}>
       <div
         ref={internalRef}
+        data-theme-menu-open={isOpen ? 'true' : undefined}
         className={cn('relative', className)}
         {...props}
       >
@@ -94,7 +96,7 @@ const DropdownMenuTrigger = React.forwardRef<
   return (
     <button
       ref={ref}
-      className={cn('outline-none', className)}
+      className={cn(enterpriseControlFocusClass(), className)}
       onClick={handleClick}
       {...props}
     >
@@ -106,8 +108,13 @@ DropdownMenuTrigger.displayName = 'DropdownMenuTrigger'
 
 const DropdownMenuContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { align?: 'start' | 'end'; side?: 'top' | 'bottom' }
->(({ className, align = 'end', side = 'bottom', ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & {
+    align?: 'start' | 'end'
+    side?: 'top' | 'bottom'
+    onCloseAutoFocus?: (event: Event) => void
+    onOpenAutoFocus?: (event: Event) => void
+  }
+>(({ className, align = 'end', side = 'bottom', onCloseAutoFocus: _onCloseAutoFocus, onOpenAutoFocus: _onOpenAutoFocus, ...props }, ref) => {
   const context = React.useContext(DropdownMenuContext)
   const [isAnimating, setIsAnimating] = React.useState(false)
 
@@ -129,7 +136,7 @@ const DropdownMenuContent = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        'absolute w-56 rounded-xl glass-card shadow-2xl z-50 py-2',
+        'absolute w-56 rounded-xl liquid-glass-enterprise-popover shadow-2xl z-50 py-2',
         'border border-border/50 backdrop-blur-xl',
         'transition-all duration-200 ease-out',
         isTop ? 'bottom-full mb-2' : 'mt-2 top-full',
@@ -150,13 +157,21 @@ DropdownMenuContent.displayName = 'DropdownMenuContent'
 
 const DropdownMenuItem = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, onClick, ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & {
+    /** When false, keep the menu open after click (e.g. multi-select lists). */
+    closeOnSelect?: boolean
+    /** Alias for click handlers that should prevent auto-close via preventDefault(). */
+    onSelect?: React.MouseEventHandler<HTMLDivElement>
+  }
+>(({ className, onClick, onSelect, closeOnSelect = true, ...props }, ref) => {
   const context = React.useContext(DropdownMenuContext)
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    context?.setOpen(false)
+    onSelect?.(e)
     onClick?.(e)
+    if (closeOnSelect && !e.defaultPrevented) {
+      context?.setOpen(false)
+    }
   }
 
   return (

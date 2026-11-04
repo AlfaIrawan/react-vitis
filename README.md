@@ -1,6 +1,6 @@
 # Vitis — react-vitis
 
-Vitis adalah frontend React dan Vite untuk integrasi dan orkestrasi proses. Rebuild ini memakai fondasi UI React Tectona dari revisi `ebcb6fc` dan memulihkan fitur Vitis dari backup sebelum migrasi.
+Vitis adalah frontend React dan Vite untuk integrasi dan orkestrasi proses. Rebuild dimulai dari salinan utuh pohon Git React Tectona revisi `31192d0`. Setelah seleksi modul, fitur Vitis dipulihkan dari backup sebelum rebuild.
 
 ## Capability Vitis
 
@@ -16,10 +16,10 @@ Vitis adalah frontend React dan Vite untuk integrasi dan orkestrasi proses. Rebu
 
 | Bagian | Keputusan |
 |---|---|
-| Tema, komponen UI, indikator loading, dan penanganan error Tectona | Dipakai sebagai fondasi UI Vitis, dengan nama dan aset Vitis |
+| Shell Tectona, topbar, launcher desktop dan mobile, tema, indikator loading, dan penanganan error | Diadopsi dengan navigasi dan branding Vitis. Skala viewport dan latar video memakai implementasi Tectona |
 | Project management, idea backlog, portfolio, planning, resource, dan dokumentasi Tectona | Dikeluarkan karena berfokus pada pengelolaan proyek Tectona |
-| Integrasi, workflow automation, dan monitoring Tectona | Kebutuhannya relevan. Vitis mempertahankan implementasi dan data kontraknya sendiri agar workspace, konektor, workflow, dan riwayat yang sudah ada tetap terbaca |
-| Login, register, profil, notifikasi, dan todo | Dipulihkan dari Vitis. Kontrak Identity Lite yang dipakai bersama tetap menggunakan konfigurasi backend yang sudah ada |
+| Integrasi, workflow automation, dan monitoring | Workspace proyek, katalog konektor, designer, dan process monitor dipulihkan dari Vitis. Canvas memakai pratinjau garis dan routing dari Tectona. Runtime Tectona memerlukan format dan cakupan workspace tersendiri |
+| Login dan register | Struktur formulir Tectona disambungkan ke handler Identity Lite Vitis. Profil, notifikasi, dan todo dipulihkan dari Vitis |
 | Model registry, deployment model, feedback, dan governance AI | Source halaman dan aksi AI lifecycle dibuang. Adapter dataset, trainer, dan compute dipertahankan untuk kompatibilitas rekaman eksekusi lama |
 
 ## Menjalankan
@@ -45,6 +45,7 @@ npm run build
 ## Pemisahan data lokal
 
 - `localStorage`: `vitis_session`, `vitis-project-storage`, `vitis-connector-storage`, `vitis_workflows_*`, notifikasi/todo app ID Vitis.
+- URL editor lama `/projects/:projectId/workflows/:workflowId` dan penyimpanan workflow serta grup dipertahankan. Buka workflow pada profil browser dan origin yang sama dengan tempat ia disimpan. Port HTTP `5182` dan URL HTTPS Dev mempunyai penyimpanan browser terpisah.
 
 ## Struktur
 

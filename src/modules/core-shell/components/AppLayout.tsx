@@ -1,132 +1,86 @@
-import { useState, useEffect, useCallback } from 'react'
-import { normalizeAccent } from '@/lib/vitisThemes'
-import { Sidebar } from './Sidebar'
-import { Topbar } from './Topbar'
-import { useThemeStore } from '@/stores/theme-store'
+import { useCallback, useEffect, useState } from 'react'
+import { Outlet } from 'react-router-dom'
+import { ListTodo, Palette, X } from 'lucide-react'
+import { AppErrorBoundary } from '@/components/AppErrorBoundary'
+import { Button } from '@/components/ui/button'
+import ThemeSettingsPanel from '@/components/settings/ThemeSettingsPanel'
 import { useSettingsPanelStore } from '@/stores/settings-panel-store'
 import { usePreferencesStore } from '@/stores/preferences-store'
+import { useThemeStore } from '@/stores/theme-store'
+import { normalizeAccent } from '@/lib/vitisThemes'
 import { cn } from '@/lib/utils'
-import { Outlet } from 'react-router-dom'
-import ThemeSettingsPanel from '@/components/settings/ThemeSettingsPanel'
 import { TodoListPanel } from './TodoListPanel'
-import { X, ListTodo, Palette } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Topbar } from './Topbar'
 
-export type { SettingsPanelType } from '@/stores/settings-panel-store'
-
-interface AppLayoutProps {
-  children?: React.ReactNode
-}
-
-export function AppLayout({ children }: AppLayoutProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { panel: settingsPanel, closePanel } = useSettingsPanelStore()
+export function AppLayout() {
+  const { panel: settingsPanel, closePanel, openThemePanel, openTodoPanel } = useSettingsPanelStore()
   const { theme } = useThemeStore()
-  const rawAccent = usePreferencesStore((s) => s.preferences?.accentColor)
-  const accentColor = normalizeAccent(rawAccent)
-
+  const accent = usePreferencesStore((state) => state.preferences.accentColor)
   const themeSettingsOpen = settingsPanel === 'theme'
   const todoPanelOpen = settingsPanel === 'todo'
   const [panelContentEl, setPanelContentEl] = useState<HTMLElement | null>(null)
-  const setPanelContentRef = useCallback((el: HTMLDivElement | null) => setPanelContentEl(el), [])
+  const setPanelContentRef = useCallback((element: HTMLDivElement | null) => setPanelContentEl(element), [])
 
-  // Apply accent/theme data attribute for CSS (e.g. Deep Cosmic Enterprise)
   useEffect(() => {
-    if (accentColor) {
-      document.documentElement.dataset.accent = accentColor
-    } else {
-      delete document.documentElement.dataset.accent
+    document.documentElement.dataset.accent = normalizeAccent(accent)
+    const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    document.documentElement.classList.toggle('dark', dark)
+    document.documentElement.classList.toggle('light', !dark)
+  }, [theme, accent])
+
+  useEffect(() => {
+    if (!settingsPanel) return
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closePanel()
     }
-  }, [accentColor])
-
-  // Initialize theme on mount
-  useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark')
-    document.documentElement.classList.add(theme)
-  }, [theme])
-
-  // Ensure panel is closed on mount
-  useEffect(() => {
-    closePanel()
-  }, [closePanel])
-
-  // ESC key closes panel
-  useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && settingsPanel) {
-        closePanel()
-      }
-    }
-
-    window.addEventListener('keydown', handleEscKey)
-    return () => window.removeEventListener('keydown', handleEscKey)
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
   }, [settingsPanel, closePanel])
 
-  // Disable native browser/Windows right-click context menu so only app custom menus show
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => e.preventDefault()
-    document.addEventListener('contextmenu', handleContextMenu)
-    return () => document.removeEventListener('contextmenu', handleContextMenu)
-  }, [])
-
-  const toggleThemeSettings = () => {
-    useSettingsPanelStore.getState().panel === 'theme' ? closePanel() : useSettingsPanelStore.getState().openThemePanel()
-  }
-
-  const toggleTodoPanel = () => {
-    const store = useSettingsPanelStore.getState()
-    store.panel === 'todo' ? store.closePanel() : store.openTodoPanel()
-  }
+  const toggleTheme = () => themeSettingsOpen ? closePanel() : openThemePanel()
+  const toggleTodo = () => todoPanelOpen ? closePanel() : openTodoPanel()
 
   return (
-    <div className="min-h-screen relative">
-      {/* Sidebar removed - replaced with App Launcher dropdown */}
-      {/* <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-      /> */}
-      <Topbar
-        sidebarCollapsed={false}
-        accentColor={accentColor}
-        onToggleThemeSettings={toggleThemeSettings}
-        onToggleTodoPanel={toggleTodoPanel}
-      />
-      <main
-        className={cn(
-          'pt-12 transition-all duration-300 min-h-screen relative',
-          'ml-0'
-        )}
-      >
-        <div className="px-10 py-3 max-w-[1920px] mx-auto relative">
-          {children || <Outlet />}
+    <div className="app-shell relative flex h-[var(--app-vh,100dvh)] min-h-0 w-full min-w-0 flex-col pt-12">
+      <Topbar onToggleThemeSettings={toggleTheme} onToggleTodoPanel={toggleTodo} />
+
+      <div className="flex min-h-0 w-full min-w-0 flex-1 overflow-hidden">
+        <div className="relative flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-auto scrollbar-hide">
+          <main className="relative flex min-h-full w-full min-w-0 flex-1 flex-col">
+            <div className="app-page-content relative flex min-h-full min-w-0 w-full max-w-none flex-1 flex-col self-stretch px-4 md:px-10 py-3">
+              <AppErrorBoundary><Outlet /></AppErrorBoundary>
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
+      {settingsPanel ? (
+        <div
+          className="fixed inset-0 z-[1050] bg-black/20 backdrop-blur-sm"
+          data-theme-overlay
+          onClick={closePanel}
+          aria-hidden="true"
+          role="button"
+          tabIndex={-1}
+        />
+      ) : null}
 
-      {/* Overlay when any settings panel is open */}
-      <div
-        className={cn(
-          'fixed inset-0 bg-black/20 backdrop-blur-sm z-[1050] transition-opacity',
-          settingsPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        )}
-        onClick={closePanel}
-        aria-hidden="true"
-        role="button"
-        tabIndex={-1}
-      />
-
-      {/* Right panel: Theme Settings or Todo List (same drawer) — full height, no rounded. Background: white (as before). */}
+      {/* Right panel: Theme Settings or Todo List (same drawer) */}
       <div
         className={cn(
           'fixed top-0 right-0 h-full transform z-[1100] transition-all duration-300',
-          'bg-white dark:bg-slate-900 shadow-2xl',
+          'max-w-full bg-white dark:bg-slate-900 shadow-2xl',
           todoPanelOpen ? 'w-[480px]' : 'w-80',
           settingsPanel ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
         )}
         style={{
-          boxShadow: '0 0 60px rgba(0, 0, 0, 0.3), inset 1px 0 0 rgba(255, 255, 255, 0.1)',
+          boxShadow: 'var(--vitis-overlay-shadow, 0 0 60px rgba(0, 0, 0, 0.3), inset 1px 0 0 rgba(255, 255, 255, 0.1))',
         }}
+        role={settingsPanel ? 'dialog' : undefined}
+        aria-label={todoPanelOpen ? 'Todo List' : themeSettingsOpen ? 'Theme Settings' : undefined}
+        aria-hidden={!settingsPanel}
+        inert={!settingsPanel}
       >
-        <div className="flex items-center justify-between p-4 border-b border-border backdrop-blur-sm">
+        <div className="settings-drawer-header flex shrink-0 items-center justify-between p-4 border-b border-border backdrop-blur-sm">
           <div className="flex flex-col gap-0.5 min-w-0">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
               {themeSettingsOpen && <Palette className="h-5 w-5 text-muted-foreground" aria-hidden />}
@@ -139,7 +93,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </p>
             )}
             {todoPanelOpen && (
-              <p className="text-xs text-muted-foreground leading-snug max-w-[320px]">
+              <p data-todo-intro className="text-xs text-muted-foreground leading-snug max-w-[320px]">
                 Add tasks, set due dates and priorities, organize by category, and filter by status to stay on top of your work.
               </p>
             )}
@@ -156,6 +110,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div
           ref={setPanelContentRef}
           className="relative p-4 overflow-y-auto h-[calc(100%-4rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          data-settings-content
         >
           {themeSettingsOpen && <ThemeSettingsPanel />}
           {todoPanelOpen && <TodoListPanel panelContainerEl={panelContentEl} />}

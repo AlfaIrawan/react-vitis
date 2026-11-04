@@ -1,22 +1,38 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
+import { getUiLayoutViewportSize, visualRectToLayoutRect } from '@/lib/uiScale'
 
 interface TooltipProps {
   children: React.ReactElement
   /** Content: string (first line = title, rest = list items) or ReactNode for custom layout */
   content: React.ReactNode
   side?: 'top' | 'bottom' | 'left' | 'right'
+  /** Jarak dari trigger (px). Default 8; rail nav disarankan 12–14. */
+  sideOffset?: number
+  size?: 'default' | 'compact'
   className?: string
 }
 
 /** Renders tooltip content with consistent SaaS style: title (semibold) + divider + list (normal). */
-function renderDefaultContent(content: string): React.ReactNode {
+function renderDefaultContent(content: string, compact: boolean): React.ReactNode {
+  const textClass = compact
+    ? 'text-[10px] font-normal text-slate-600 dark:text-slate-300 leading-none'
+    : 'text-[13px] font-normal text-slate-700 dark:text-slate-300 leading-relaxed'
+  const titleClass = compact
+    ? 'text-xs font-medium text-slate-800 dark:text-slate-100 leading-snug'
+    : 'text-[13px] font-semibold text-slate-900 dark:text-slate-100'
   const lines = content.split('\n').filter(Boolean)
   if (lines.length === 0) return null
   if (lines.length === 1) {
     return (
-      <div className="text-[13px] font-normal text-slate-700 dark:text-slate-300 leading-relaxed">
+      <div
+        className={
+          compact
+            ? 'text-xs font-normal text-slate-700 dark:text-slate-200 leading-snug'
+            : textClass
+        }
+      >
         {lines[0]}
       </div>
     )
@@ -24,21 +40,57 @@ function renderDefaultContent(content: string): React.ReactNode {
   const [title, ...items] = lines
   return (
     <>
-      <div className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">{title}</div>
-      <div className="border-t border-slate-200/80 dark:border-slate-600/80 mt-2 pt-2" />
-      <ul className="space-y-1.5 text-[13px] font-normal text-slate-700 dark:text-slate-300 leading-relaxed list-none mt-2">
-        {items.map((line, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <span className="text-slate-400 dark:text-slate-500 shrink-0">•</span>
-            <span>{line}</span>
-          </li>
-        ))}
-      </ul>
+      <div className={titleClass}>{title}</div>
+      {compact ? (
+        <ul className="mt-1.5 space-y-1 list-none text-xs font-normal leading-snug text-slate-600 dark:text-slate-300">
+          {items.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+      ) : (
+        <>
+          <div className="border-t border-slate-200/80 dark:border-slate-600/80 mt-2 pt-2" />
+          <ul className={cn('space-y-1.5 leading-relaxed list-none mt-2 text-[13px] font-normal text-slate-700 dark:text-slate-300')}>
+            {items.map((line, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-slate-400 dark:text-slate-500 shrink-0">•</span>
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </>
   )
 }
 
-export function Tooltip({ children, content, side = 'bottom', className }: TooltipProps) {
+function tooltipTransform(side: TooltipProps['side']): string {
+  if (side === 'right') return 'translateY(-50%)'
+  if (side === 'left') return 'translate(-100%, -50%)'
+  return 'translateX(-50%)'
+}
+
+function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
+  return (value) => {
+    for (const ref of refs) {
+      if (typeof ref === 'function') ref(value)
+      else if (ref != null) (ref as React.RefObject<T | null>).current = value
+    }
+  }
+}
+
+export function Tooltip({
+  children,
+  content,
+  side = 'bottom',
+  sideOffset = 8,
+  size = 'default',
+  className,
+}: TooltipProps) {
+  const compact = size === 'compact'
+  const stringLines = typeof content === 'string' ? content.split('\n').filter(Boolean) : []
+  const compactPill =
+    compact && stringLines.length === 1 && stringLines[0].length <= 28
   const [open, setOpen] = React.useState(false)
   const [coords, setCoords] = React.useState({ left: 0, top: 0 })
   const triggerRef = React.useRef<HTMLElement>(null)
@@ -46,48 +98,66 @@ export function Tooltip({ children, content, side = 'bottom', className }: Toolt
 
   const updatePosition = React.useCallback(() => {
     if (!triggerRef.current) return
-    const rect = triggerRef.current.getBoundingClientRect()
-    const gap = 8
+    const rect = visualRectToLayoutRect(triggerRef.current.getBoundingClientRect())
+    const viewport = getUiLayoutViewportSize()
+    const gap = sideOffset
     const padding = 14
-    
-    // Get trigger center
     const centerX = rect.left + rect.width / 2
-    
-    // Calculate initial position (centered on trigger)
-    let left = centerX
-    
-    // If tooltip is already rendered, measure its actual width and adjust
-    if (tooltipRef.current) {
-      const tooltipWidth = tooltipRef.current.offsetWidth
-      const halfWidth = tooltipWidth / 2
-      
-      // Constrain to viewport bounds
-      const minLeft = padding + halfWidth
-      const maxLeft = window.innerWidth - padding - halfWidth
-      left = Math.max(minLeft, Math.min(maxLeft, left))
-    } else {
-      // Fallback: constrain assuming max width
-      const maxW = 320
-      const halfMaxW = maxW / 2
-      const minLeft = padding + halfMaxW
-      const maxLeft = window.innerWidth - padding - halfMaxW
-      left = Math.max(minLeft, Math.min(maxLeft, left))
-    }
-    
-    // For "top": place tooltip fully above trigger (bottom edge of tooltip = rect.top - gap)
-    let top: number
-    if (side === 'bottom') {
-      top = rect.bottom + gap
-    } else if (side === 'top') {
-      const tooltipHeight = tooltipRef.current?.offsetHeight ?? 64
-      top = rect.top - gap - tooltipHeight
-    } else {
-      top = rect.top - gap
-    }
-    setCoords({ left, top })
-  }, [side])
+    const centerY = rect.top + rect.height / 2
 
-  const handleMouseEnter = (e: React.MouseEvent) => {
+    let left = centerX
+    let top: number
+
+    if (side === 'right') {
+      left = rect.right + gap
+      top = centerY
+      if (tooltipRef.current) {
+        const w = tooltipRef.current.offsetWidth
+        const maxLeft = viewport.width - padding - w
+        left = Math.min(left, maxLeft)
+      }
+    } else if (side === 'left') {
+      left = rect.left - gap
+      top = centerY
+      if (tooltipRef.current) {
+        const w = tooltipRef.current.offsetWidth
+        left = Math.max(padding + w, left)
+      }
+    } else if (side === 'bottom') {
+      top = rect.bottom + gap
+      if (tooltipRef.current) {
+        const tooltipWidth = tooltipRef.current.offsetWidth
+        const halfWidth = tooltipWidth / 2
+        const minLeft = padding + halfWidth
+        const maxLeft = viewport.width - padding - halfWidth
+        left = Math.max(minLeft, Math.min(maxLeft, centerX))
+      } else {
+        const halfMaxW = 160
+        const minLeft = padding + halfMaxW
+        const maxLeft = viewport.width - padding - halfMaxW
+        left = Math.max(minLeft, Math.min(maxLeft, centerX))
+      }
+    } else {
+      const tooltipHeight = tooltipRef.current?.offsetHeight ?? (compact ? 28 : 64)
+      top = rect.top - gap - tooltipHeight
+      if (tooltipRef.current) {
+        const tooltipWidth = tooltipRef.current.offsetWidth
+        const halfWidth = tooltipWidth / 2
+        const minLeft = padding + halfWidth
+        const maxLeft = viewport.width - padding - halfWidth
+        left = Math.max(minLeft, Math.min(maxLeft, centerX))
+      } else {
+        const halfMaxW = 160
+        const minLeft = padding + halfMaxW
+        const maxLeft = viewport.width - padding - halfMaxW
+        left = Math.max(minLeft, Math.min(maxLeft, centerX))
+      }
+    }
+
+    setCoords({ left, top })
+  }, [side, sideOffset, compact])
+
+  const handleMouseEnter = (_: React.MouseEvent) => {
     setOpen(true)
     requestAnimationFrame(() => {
       updatePosition()
@@ -111,26 +181,30 @@ export function Tooltip({ children, content, side = 'bottom', className }: Toolt
   }, [open, updatePosition])
 
   const child = React.Children.only(children)
-  const trigger = React.cloneElement(child as React.ReactElement<{ ref?: React.Ref<unknown>; onMouseEnter?: React.MouseEventHandler; onMouseLeave?: React.MouseEventHandler }>, {
-    ref: (el: HTMLElement | null) => {
-      triggerRef.current = el
-      const origRef = (child as React.ReactElement<{ ref?: React.Ref<unknown> }>).ref
-      if (typeof origRef === 'function') origRef(el)
-      else if (origRef) (origRef as React.MutableRefObject<HTMLElement | null>).current = el
-    },
+  const childEl = child as React.ReactElement<{
+    ref?: React.Ref<HTMLElement>
+    onMouseEnter?: (e: React.MouseEvent) => void
+    onMouseLeave?: (e: React.MouseEvent) => void
+    onClick?: (e: React.MouseEvent) => void
+  }>
+  const trigger = React.cloneElement(childEl, {
+    ref: mergeRefs(triggerRef, childEl.props.ref),
     onMouseEnter: (e: React.MouseEvent) => {
       handleMouseEnter(e)
-      child.props.onMouseEnter?.(e)
+      childEl.props.onMouseEnter?.(e)
     },
     onMouseLeave: (e: React.MouseEvent) => {
       handleMouseLeave()
-      child.props.onMouseLeave?.(e)
+      childEl.props.onMouseLeave?.(e)
+    },
+    onClick: (e: React.MouseEvent) => {
+      childEl.props.onClick?.(e)
     },
   })
 
   const contentNode =
     typeof content === 'string'
-      ? renderDefaultContent(content)
+      ? renderDefaultContent(content, compact)
       : content
 
   return (
@@ -140,11 +214,19 @@ export function Tooltip({ children, content, side = 'bottom', className }: Toolt
         createPortal(
           <div
             ref={tooltipRef}
+            data-theme-surface="tooltip"
             className={cn(
-              'fixed z-[9999] max-w-[320px] px-4 py-3',
+              'fixed z-[9999]',
+              compact
+                ? compactPill
+                  ? 'max-w-none px-3 py-1.5'
+                  : 'max-w-[280px] px-3 py-2'
+                : 'max-w-[320px] px-4 py-3',
               'bg-white dark:bg-slate-800',
-              'rounded-[13px]',
-              'shadow-md shadow-black/6 dark:shadow-black/20',
+              compact ? (compactPill ? 'rounded-full' : 'rounded-xl') : 'rounded-[13px]',
+              compact
+                ? 'shadow-[0_2px_8px_rgba(15,23,42,0.08)] dark:shadow-black/25'
+                : 'shadow-md shadow-black/6 dark:shadow-black/20',
               'border border-slate-200/70 dark:border-slate-600/50',
               'animate-in fade-in-0 zoom-in-95 duration-150',
               className
@@ -152,13 +234,13 @@ export function Tooltip({ children, content, side = 'bottom', className }: Toolt
             style={{
               left: `${coords.left}px`,
               top: `${coords.top}px`,
-              transform: 'translateX(-50%)',
+              transform: tooltipTransform(side),
             }}
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
           >
-            {/* Minimal arrow pointer */}
-            {side === 'bottom' && (
+            {/* Minimal arrow pointer — hidden for compact icon-rail tooltips */}
+            {!compact && side === 'bottom' && (
               <>
                 <div
                   className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-[6px] border-transparent border-b-slate-200/70 dark:border-b-slate-600/50 border-t-0"
@@ -172,7 +254,7 @@ export function Tooltip({ children, content, side = 'bottom', className }: Toolt
                 />
               </>
             )}
-            {side === 'top' && (
+            {!compact && side === 'top' && (
               <>
                 <div
                   className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-[6px] border-transparent border-t-slate-200/70 dark:border-t-slate-600/50 border-b-0"

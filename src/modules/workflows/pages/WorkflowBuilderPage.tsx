@@ -17,6 +17,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ui/toast'
 import { notifyEvent } from '@/lib/api/notificationApi'
 import { useActiveProjectStore } from '@/stores/active-project-store'
+import { WorkflowConnectionPreview } from '@/modules/workflow-automation-engine/components/WorkflowConnectionPreview'
 import { WorkflowRoutedEdge, WorkflowRoutingContext } from '../components/WorkflowRoutedEdge'
 import { setWorkflowWaypoint, type WorkflowWaypoint } from '../utils/edgeRouting'
 import { WorkflowNode } from '../components/WorkflowNode'
@@ -467,6 +468,7 @@ export function WorkflowBuilderPage() {
               onPaneClick={onPaneClick}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
+              connectionLineComponent={WorkflowConnectionPreview}
               deleteKeyCode={isReadOnly ? null : 'Backspace'}
               nodesDraggable={!isReadOnly}
               nodesConnectable={!isReadOnly}

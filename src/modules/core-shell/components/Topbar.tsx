@@ -1,112 +1,78 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, LogOut, Settings, Bell, Circle, Command, Palette, ListTodo } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { Bell, Circle, ListTodo, LogOut, MoreHorizontal, Palette, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
-import { getSession, logout } from '@/auth/authService'
-import type { Session } from '@/auth/authService'
-import { fetchUnreadCount, VITIS_APP_ID } from '@/lib/api/notificationApi'
-import { AppLauncher } from './AppLauncher'
-import { NotificationPanel } from './NotificationPanel'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Tooltip } from '@/components/ui/tooltip'
+import { getSession, logoutAsync } from '@/auth/authService'
+import { fetchUnreadCount, VITIS_APP_ID } from '@/lib/api/notificationApi'
+import { cn } from '@/lib/utils'
+import { normalizeUserDisplayName } from '@/lib/userDisplayName'
+import { NotificationPanel } from './NotificationPanel'
+import { AppLauncher } from './AppLauncher'
 
-interface TopbarProps {
-  sidebarCollapsed: boolean
-  accentColor?: string
-  onToggleThemeSettings?: () => void
-  onToggleTodoPanel?: () => void
-}
-
-export function Topbar({ sidebarCollapsed, onToggleThemeSettings, onToggleTodoPanel }: TopbarProps) {
+export function Topbar({ onToggleThemeSettings, onToggleTodoPanel }: { onToggleThemeSettings: () => void; onToggleTodoPanel: () => void }) {
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
+  const session = getSession()
+  const userId = session?.user.id
+  const userName = normalizeUserDisplayName(session?.user.name || session?.user.email || 'User')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [notificationOpen, setNotificationOpen] = useState(false)
-  const [session, setSession] = useState<Session | null>(null)
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0)
-
-  // Load session on mount
   useEffect(() => {
-    const session = getSession()
-    setSession(session)
-  }, [])
-
-  // Load notification unread count when session is available (for badge)
-  useEffect(() => {
-    const session = getSession()
-    if (!session?.user?.id) return
-    fetchUnreadCount({ app_id: VITIS_APP_ID, user_id: session.user.id })
-      .then((res) => setNotificationUnreadCount(res.unread_count))
+    if (!userId) return
+    let active = true
+    const refresh = () => fetchUnreadCount({ app_id: VITIS_APP_ID, user_id: userId })
+      .then((result) => { if (active) setNotificationUnreadCount(result.unread_count) })
       .catch(() => {})
-  }, [session])
+    void refresh()
+    const timer = window.setInterval(refresh, 30_000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [userId])
 
-  const environment = 'development'
-  const userName = session?.user.name || 'User'
-
+  const topbarEnvironment = { tone: import.meta.env.VITE_APP_ENV === 'production' ? 'production' : 'other',
+    label: import.meta.env.VITE_APP_ENV === 'production' ? 'Production' : 'Development' }
   const handleLogout = () => {
-    logout()
-    navigate('/login', { replace: true })
+    void logoutAsync().finally(() => navigate('/login', { replace: true }))
   }
-
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 h-12 z-[60] transition-all duration-300',
-        'glass-topbar',
+        'absolute top-0 right-0 left-0 h-12 z-[60] transition-all duration-300',
+        'glass-topbar responsive-topbar',
         'left-0'
       )}
     >
       <div className="flex items-center justify-between h-full px-2 gap-2">
         {/* Left Side: Logo + pembatas + nama tenant */}
         <div className="flex items-center gap-3">
-          <img
-            src="/images/vitis-wordmark.svg"
-            alt="Vitis — AI Workflow Automation"
+          <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation"
             className="h-10 w-auto shrink-0 object-contain"
           />
           <div
             className="topbar-tenant-sep h-6 w-px flex-shrink-0 bg-slate-300"
             aria-hidden
           />
-          <span className="topbar-tenant-name text-base font-medium text-slate-700 whitespace-nowrap">
-            Adira Dinamika Multifinance
+          <span
+            className="topbar-tenant-name text-base font-medium text-slate-700 whitespace-nowrap max-w-[min(20rem,calc(100vw-24rem))] truncate"
+            title="AI Workflow Automation"
+          >
+            AI Workflow Automation
           </span>
         </div>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2">
-          {/* Global Search - wrapper satu blok supaya background seragam (Deep Cosmic) */}
-          <div className="topbar-search relative h-8 rounded-md overflow-hidden flex items-center">
-            <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none z-[1]">
-              <Command className="h-4 w-4 text-slate-500 topbar-search-icon" />
-              <span className="text-xs text-slate-500 topbar-search-shortcut">Q</span>
-            </div>
-            <Input
-              type="search"
-              placeholder="Search projects, runs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="topbar-search-input pl-14 pr-2 h-8 w-56 bg-transparent border-0 text-slate-800 placeholder:text-slate-500 focus:ring-0 focus-visible:ring-0 transition-all text-xs rounded-md"
-            />
-          </div>
-
           {/* Environment Indicator - class agar teks tetap gelap di tema topbar gelap */}
           <div className="environment-indicator flex items-center gap-1.5 h-8 px-3 rounded-md bg-white/90 backdrop-blur-sm border border-slate-200/80 shadow-sm">
             <Circle className={cn(
               'h-2 w-2 shrink-0',
-              environment === 'production' 
-                ? 'text-red-500 fill-red-500' 
+              topbarEnvironment.tone === 'production'
+                ? 'text-red-500 fill-red-500'
                 : 'text-green-500 fill-green-500'
             )} />
-            <span className="text-xs font-medium text-slate-800 capitalize">
-              {environment}
+            <span className="text-xs font-medium text-slate-800">
+              {topbarEnvironment.label}
             </span>
           </div>
 
@@ -141,7 +107,7 @@ export function Topbar({ sidebarCollapsed, onToggleThemeSettings, onToggleTodoPa
             <Button
               variant="ghost"
               size="icon"
-              className="topbar-action-btn hover:bg-gray-100"
+              className="topbar-action-btn mobile-topbar-secondary hover:bg-gray-100"
               aria-label="Todo list"
               onClick={onToggleTodoPanel}
             >
@@ -155,7 +121,7 @@ export function Topbar({ sidebarCollapsed, onToggleThemeSettings, onToggleTodoPa
               variant="ghost"
               size="icon"
               onClick={onToggleThemeSettings || (() => {})}
-              className="topbar-action-btn hover:bg-gray-100"
+              className="topbar-action-btn mobile-topbar-secondary hover:bg-gray-100"
               aria-label="Open theme settings"
             >
               <Palette className="h-4 w-4 text-gray-600 topbar-action-icon" />
@@ -165,6 +131,16 @@ export function Topbar({ sidebarCollapsed, onToggleThemeSettings, onToggleTodoPa
           {/* App Launcher - Before Account */}
           <AppLauncher />
 
+          <div className="mobile-topbar-more hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="More tools"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onToggleTodoPanel}>Todo list</DropdownMenuItem>
+                <DropdownMenuItem onClick={onToggleThemeSettings}>Theme settings</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {/* User Menu */}
           <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
             <DropdownMenuTrigger asChild>
@@ -172,8 +148,10 @@ export function Topbar({ sidebarCollapsed, onToggleThemeSettings, onToggleTodoPa
                 variant="ghost"
                 className="topbar-action-btn flex items-center gap-2 px-2 h-8 hover:bg-gray-100"
               >
-                <div className="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
+                <div className="relative h-7 w-7 shrink-0">
+                  <div className="h-7 w-7 overflow-hidden rounded-full bg-blue-500 flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
                 </div>
                 <span className="text-xs font-medium hidden sm:inline-block text-gray-700 topbar-action-icon">
                   {userName}
@@ -184,10 +162,6 @@ export function Topbar({ sidebarCollapsed, onToggleThemeSettings, onToggleTodoPa
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="w-4 h-4 mr-2" />
                 Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
               </DropdownMenuItem>
               <div className="border-t border-border/40 my-1" />
               <DropdownMenuItem

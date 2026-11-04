@@ -1,3 +1,4 @@
+import { AuthTransientAlert } from '@/modules/auth/components/AuthTransientAlert'
 import { AuthPageLayout, authCardButtonClass, authCardInputClass } from '@/modules/auth/AuthPageLayout'
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -72,18 +73,23 @@ export function LoginPage() {
     }
   }
 
+
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const isFormValid = isEmailValid && !!password && !isSubmitting
+
   return (
     <AuthPageLayout>
       <div id="login-card-header" className="space-y-2 text-center">
-        <img src="/images/vitis-wordmark.svg" alt="Vitis — AI Workflow Automation" className="mx-auto h-24 max-w-full w-auto object-contain" />
-        <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+        <img src="/images/vitis-wordmark.svg"
+          alt="Vitis — AI Workflow Automation"
+          className="mx-auto h-24 max-w-full w-auto object-contain"
+        />
+        <p className="text-sm text-muted-foreground">
+          Sign in to your account
+        </p>
       </div>
 
-      {error && (
-        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      <AuthTransientAlert message={error} onDismiss={() => setError('')} />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -91,15 +97,23 @@ export function LoginPage() {
           <Input
             id="email"
             type="email"
-            autoComplete="username"
             placeholder="you@company.com"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value)
               setError('')
             }}
-            className={authCardInputClass}
+            className={cn(
+              authCardInputClass,
+              !isEmailValid && email.length > 0 && 'border-destructive focus-visible:ring-destructive',
+            )}
+            disabled={isSubmitting}
+            autoComplete="email"
+            required
           />
+          {!isEmailValid && email.length > 0 && (
+            <p className="text-xs text-destructive">Please enter a valid email address</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -108,35 +122,48 @@ export function LoginPage() {
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
                 setError('')
               }}
-              className={authCardInputClass + " pr-11"}
+              disabled={isSubmitting}
+              autoComplete="current-password"
+              required
+              className={cn(authCardInputClass, 'pr-10')}
             />
             <button
               type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-0 top-1/2 flex h-10 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
+              disabled={isSubmitting}
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
         </div>
 
-        <Button type="submit" className={authCardButtonClass} disabled={isSubmitting}>
-          {isSubmitting ? 'Signing in…' : 'Sign in'}
+        <Button
+          id="login-submit"
+          type="submit"
+          className={authCardButtonClass}
+          disabled={!isFormValid}
+        >
+          {isSubmitting ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
 
       <Button
+        id="login-passkey"
         type="button"
         variant="outline"
-        className={authCardButtonClass}
+        className={cn(authCardButtonClass, 'mt-3')}
         onClick={() => void handlePasskeyLogin()}
         disabled={isSubmitting}
       >
@@ -171,15 +198,11 @@ export function LoginPage() {
         </>
       )}
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p id="login-signup-link" className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
-        <button
-          type="button"
-          className={cn('font-medium text-primary hover:underline')}
-          onClick={() => navigate('/register')}
-        >
+        <a href="/register" className="text-primary hover:underline" onClick={(e) => { e.preventDefault(); navigate('/register') }}>
           Sign up
-        </button>
+        </a>
       </p>
     </AuthPageLayout>
   )
