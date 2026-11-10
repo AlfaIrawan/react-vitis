@@ -1,3 +1,4 @@
+import { canAdministerInternalApp, useInternalAccessRoles } from '@/auth/internalAccessRoles'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Activity, FolderOpen, Grid3x3, LayoutDashboard, Plug, Settings, Workflow } from 'lucide-react'
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from '@/components/ui/dropdown-menu'
 import { MobileModuleMenu } from './MobileModuleMenu'
 
-const items = [
+const defaultItems = [
   { icon: LayoutDashboard, label: 'Dashboard', description: 'Overview of Vitis capabilities', path: '/' },
   { icon: FolderOpen, label: 'Workspaces', description: 'Organize integrations and workflows by project', path: '/projects' },
   { icon: Plug, label: 'Integration Catalog', description: 'Browse workspace connectors', path: '/integrations' },
@@ -32,6 +33,8 @@ function launcherItemButtonClass(opts: {
 }
 
 export function AppLauncher() {
+  const admin = canAdministerInternalApp(useInternalAccessRoles())
+  const items = admin ? [...defaultItems, { icon: Settings, label: 'Users & Access', description: 'Provision identities and application access', path: '/internal-users' }] : defaultItems
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)

@@ -50,3 +50,14 @@ npm run build
 ## Struktur
 
 Frontend React + Vite dengan penyesuaian `App.tsx`, sidebar, dashboard, workspace proyek, dan branding **Vitis**.
+
+
+## Internal application access
+
+Sign-in only: administrators provision identities and application entitlements. Public registration and access-request routes show access denied. Password, configured identity providers, and enrolled passkeys remain supported.
+
+The app uses `vitis-spa` (`VITE_VITIS_OIDC_CLIENT_ID`). Do not reuse a Tectona client configuration. Existing sessions must pass `POST /api/identity-lite/v1/internal-access/check` before protected content is mounted; unavailable checks fail closed. Deploy the matching Identity Lite entitlement API and provision grants before releasing this frontend. No existing identity or grant data is migrated by this frontend change.
+
+Application administrators can open **Users & Access** from the app launcher (`/internal-users`). Navigation and the page require current app admin/root roles from the live entitlement check. Provision new identities (federated-only or optional local password), grant an existing UUID, and edit roles/enabled access. Root/bootstrap/last-admin constraints are enforced by the server. No global identity search or user deletion is exposed.
+
+Vitis projects require an explicitly selected authorized workspace. Configure `VITE_VITIS_AUTHZ_APP_ID` with the Vitis-owned WAC app UUID, matching server `INTERNAL_APP_WAC_IDS`; no default/Tectona UUID is used. The list/create selector reads only the signed-in subject’s active memberships. Empty mapping or membership shows administrator setup guidance. No membership is created automatically. Workspace IDs are displayed until a scoped workspace-name API is available. Resource calls use authenticated transport; new project owner is the current subject.

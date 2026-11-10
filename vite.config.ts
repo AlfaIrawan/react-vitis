@@ -11,6 +11,10 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: ['localhost', '127.0.0.1', 'host.docker.internal'],
     proxy: {
+      '/api/workspace-access-control': {
+        target: 'http://localhost:8421',
+        changeOrigin: true,
+      },
       // Project & Folder API (python-project-service-fastapi di port 8500)
       '/api/project-service': {
         target: 'http://localhost:8500',

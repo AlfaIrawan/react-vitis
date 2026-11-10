@@ -1,3 +1,4 @@
+import { authenticatedResourceFetch } from './authenticatedResourceFetch'
 /**
  * Dataset service API client.
  * Uses python-dataset-service-fastapi (http://localhost:8600).
@@ -274,7 +275,7 @@ export async function fetchDatasets(params?: FetchDatasetsParams): Promise<Datas
     const url = `${CONNECTOR_API_BASE_URL}?${searchParams.toString()}`
     console.log('[DatasetAPI] Fetching datasets from Connector Service:', url)
     
-    const response = await fetch(url)
+    const response = await authenticatedResourceFetch(url)
     
     if (response.ok) {
       const result = await handleResponse<ConnectorListResponse>(response)
@@ -312,7 +313,7 @@ export async function fetchDatasets(params?: FetchDatasetsParams): Promise<Datas
 export async function fetchDataset(id: string): Promise<Dataset | null> {
   try {
     // Try Dataset Service first (for datasets created in Dataset Service)
-    const response = await fetch(`${DATASET_API_BASE_URL}/${id}`)
+    const response = await authenticatedResourceFetch(`${DATASET_API_BASE_URL}/${id}`)
     
     if (response.ok) {
       const backendResult = await handleResponse<BackendDatasetResponse>(response)
@@ -322,7 +323,7 @@ export async function fetchDataset(id: string): Promise<Dataset | null> {
     }
     
     // Fallback to Connector Service (for backward compatibility with connectors)
-    const connectorResponse = await fetch(`${CONNECTOR_API_BASE_URL}/${id}`)
+    const connectorResponse = await authenticatedResourceFetch(`${CONNECTOR_API_BASE_URL}/${id}`)
     
     if (connectorResponse.status === 404) {
       return null
@@ -383,7 +384,7 @@ export async function createConnectorForDataset(params: {
     description: params.description || null,
   }
 
-  const response = await fetch(CONNECTOR_API_BASE_URL, {
+  const response = await authenticatedResourceFetch(CONNECTOR_API_BASE_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -424,7 +425,7 @@ export async function createDataset(payload: CreateDatasetPayload): Promise<Data
     status: payload.status || 'active',
   })
 
-  const response = await fetch(DATASET_API_BASE_URL, {
+  const response = await authenticatedResourceFetch(DATASET_API_BASE_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -489,7 +490,7 @@ export async function updateDataset(id: string, payload: UpdateDatasetPayload): 
     backendUpdates.label_classes = payload.schema.labelInfo.classes || null
   }
 
-  const response = await fetch(`${DATASET_API_BASE_URL}/${id}`, {
+  const response = await authenticatedResourceFetch(`${DATASET_API_BASE_URL}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -514,7 +515,7 @@ export async function updateDataset(id: string, payload: UpdateDatasetPayload): 
  */
 export async function deleteDataset(id: string): Promise<void> {
   // 1) Try Dataset Service first (for datasets created in Dataset Service)
-  const datasetResponse = await fetch(`${DATASET_API_BASE_URL}/${id}`, {
+  const datasetResponse = await authenticatedResourceFetch(`${DATASET_API_BASE_URL}/${id}`, {
     method: 'DELETE',
   })
 
@@ -524,7 +525,7 @@ export async function deleteDataset(id: string): Promise<void> {
 
   // 2) If not found in Dataset Service, try Connector Service (list is from Connector Service)
   if (datasetResponse.status === 404) {
-    const connectorResponse = await fetch(`${CONNECTOR_API_BASE_URL}/${id}`, {
+    const connectorResponse = await authenticatedResourceFetch(`${CONNECTOR_API_BASE_URL}/${id}`, {
       method: 'DELETE',
     })
     if (connectorResponse.ok) {

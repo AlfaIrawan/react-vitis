@@ -1,14 +1,13 @@
 /**
  * Identity Lite OIDC auth for Vitis (password + social + passkey + silent SSO).
- * Shares the identity-lite backend and `tectona-spa` client with Platanus / Tectona,
- * so a login in any of them bootstraps the others (same browser).
+ * Uses the shared identity-lite backend with the dedicated `vitis-spa` client,
+ * and requires administrator-provisioned Vitis access for SSO bootstrap.
  */
 import {
   loginWithPassword,
   exchangeAuthorizationCode,
   refreshAccessToken,
   fetchUserInfo,
-  registerWithEmail,
   bootstrapSsoSession,
   revokeServerSession,
   roleFromEmail,
@@ -110,7 +109,7 @@ export async function loginWithAuthorizationCode(input: {
   return finalize(token, '')
 }
 
-export { registerWithEmail }
+
 
 function isAccessTokenExpired(session: Session, skewMs = 0): boolean {
   if (!session.expiresAt) return false

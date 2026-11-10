@@ -1,3 +1,7 @@
+import { requireVitisWorkspace } from '@/auth/vitisWorkspace'
+import { authenticatedResourceFetch } from './authenticatedResourceFetch'
+import { ensureFreshSession } from '@/auth/authService'
+
 /**
  * Project service API client.
  * Uses python-project-service-fastapi (http://localhost:8500).
@@ -12,6 +16,7 @@ export type ProjectStatus = 'active' | 'archived'
 
 export interface ProjectApi {
   id: string
+  workspace_id: string | null
   name: string
   description: string | null
   status_id: string
@@ -46,7 +51,12 @@ export interface ProjectListResponse {
 
 const activeStatusId = '550e8400-e29b-41d4-a716-446655440101'
 const archivedStatusId = '550e8400-e29b-41d4-a716-446655440102'
-const dummyOwnerId = '00000000-0000-0000-0000-000000000001'
+function requireWorkspaceId(value: string | undefined): string {
+  if (!value || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+    throw new Error('Select an authorized workspace before listing or creating projects. Ask your administrator if no workspace is available.')
+  }
+  return requireVitisWorkspace(value)
+}
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -57,29 +67,33 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function fetchProjects(params?: {
+  workspace_id?: string
   page?: number
   page_size?: number
   status_id?: string
   folder_id?: string | null
 }): Promise<ProjectListResponse> {
+  const workspaceId = requireWorkspaceId(params?.workspace_id)
   const sp = new URLSearchParams()
+  sp.set('workspace_id', workspaceId)
   sp.set('page', String(params?.page ?? 1))
   sp.set('page_size', String(params?.page_size ?? 100))
   if (params?.status_id) sp.set('status_id', params.status_id)
   if (params?.folder_id !== undefined) {
     sp.set('folder_id', params.folder_id === null ? 'null' : params.folder_id)
   }
-  const res = await fetch(`${BASE_URL}/v1/projects?${sp}`)
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/projects?${sp}`)
   return handleResponse<ProjectListResponse>(res)
 }
 
 export async function fetchProject(id: string): Promise<ProjectApi | null> {
-  const res = await fetch(`${BASE_URL}/v1/projects/${id}`)
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/projects/${id}`)
   if (res.status === 404) return null
   return handleResponse<ProjectApi>(res)
 }
 
 export interface CreateProjectPayload {
+  workspace_id: string
   name: string
   description?: string
   tags?: string[]
@@ -89,14 +103,18 @@ export interface CreateProjectPayload {
 }
 
 export async function createProject(payload: CreateProjectPayload): Promise<ProjectApi> {
-  const res = await fetch(`${BASE_URL}/v1/projects`, {
+  const workspaceId = requireWorkspaceId(payload.workspace_id)
+  const session = await ensureFreshSession()
+  if (!session?.user.id) throw new Error('Sign in to create a project.')
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: payload.name,
       description: payload.description ?? null,
       status_id: activeStatusId,
-      owner_id: dummyOwnerId,
+      owner_id: session.user.id,
+      workspace_id: workspaceId,
       tags: payload.tags ?? [],
       icon_name: payload.icon_name ?? null,
       border_color: payload.border_color ?? null,
@@ -117,7 +135,7 @@ export interface UpdateProjectPayload {
 }
 
 export async function updateProject(id: string, payload: UpdateProjectPayload): Promise<ProjectApi> {
-  const res = await fetch(`${BASE_URL}/v1/projects/${id}`, {
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/projects/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -130,7 +148,7 @@ export async function archiveProject(id: string): Promise<ProjectApi> {
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/v1/projects/${id}`, { method: 'DELETE' })
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/projects/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     const text = await res.text()
     throw new Error(text || `HTTP ${res.status}`)

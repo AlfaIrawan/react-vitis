@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePreferencesStore } from '@/stores/preferences-store'
@@ -87,6 +88,7 @@ function ThemeVideoLoop({ reduced }: { reduced: boolean }) {
 
 /** Default retains its original MP4 and poster. Only the active theme is loaded. */
 export function AppBackgroundVideo() {
+  const isLogin = useLocation().pathname.replace(/\/$/, '') === '/login'
   const accent = usePreferencesStore(state => state.preferences.accentColor)
   const reduceAnimations = usePreferencesStore(state => state.preferences.reduceAnimations)
   const highContrast = usePreferencesStore(state => state.preferences.highContrast)
@@ -97,6 +99,6 @@ export function AppBackgroundVideo() {
     update(); query.addEventListener('change', update)
     return () => query.removeEventListener('change', update)
   }, [])
-  if (typeof document === 'undefined' || normalizeAccent(accent) !== 'gradient') return null
+  if (typeof document === 'undefined' || (!isLogin && normalizeAccent(accent) !== 'gradient')) return null
   return createPortal(<ThemeVideoLoop reduced={Boolean(systemReduced || reduceAnimations || highContrast)} />, document.body)
 }

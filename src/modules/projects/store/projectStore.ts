@@ -1,3 +1,5 @@
+import { requireVitisWorkspace, useVitisWorkspace } from '@/auth/vitisWorkspace'
+import { getSession } from '@/auth/authService'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ProjectApi } from '@/lib/api/projectApi'
@@ -13,6 +15,7 @@ export type ProjectStatus = 'active' | 'archived'
 
 export interface Project {
   id: string
+  workspaceId?: string
   name: string
   description?: string
   tags?: string[]
@@ -34,6 +37,7 @@ export interface Project {
 function mapApiToProject(api: ProjectApi): Project {
   return {
     id: api.id,
+    workspaceId: api.workspace_id ?? undefined,
     name: api.name,
     description: api.description ?? undefined,
     tags: api.tags ?? [],  // Keep as array (even if empty) for consistent handling
@@ -57,7 +61,7 @@ interface ProjectState {
   projects: Project[]
   projectsLoading: boolean
   projectsError: string | null
-  fetchProjects: () => Promise<void>
+  fetchProjects: (workspaceId?: string) => Promise<void>
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { tags?: string[]; iconName?: string; borderColor?: string; folderId?: string | null }) => Promise<Project>
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>
   archiveProject: (id: string) => Promise<void>
@@ -79,11 +83,14 @@ export const useProjectStore = create<ProjectState>()(
       projectsLoading: false,
       projectsError: null,
 
-      fetchProjects: async () => {
-        set({ projectsLoading: true, projectsError: null })
+      fetchProjects: async (workspaceId) => {
+        set({ projects: [], projectsLoading: true, projectsError: null })
         try {
-          const res = await fetchProjectsApi({ page: 1, page_size: 100 })
-          const projects = res.projects.map(mapApiToProject)
+          const subjectId = getSession()?.user.id
+          const authorizedWorkspace = requireVitisWorkspace(workspaceId)
+          const res = await fetchProjectsApi({ page: 1, page_size: 100, workspace_id: authorizedWorkspace })
+          if (getSession()?.user.id !== subjectId || useVitisWorkspace.getState().workspaceId !== authorizedWorkspace) return
+          const projects = res.projects.filter(project => project.workspace_id === authorizedWorkspace).map(mapApiToProject)
           set({ projects, projectsLoading: false, projectsError: null })
         } catch (e) {
           const raw = e instanceof Error ? e.message : 'Failed to fetch projects'
@@ -91,20 +98,21 @@ export const useProjectStore = create<ProjectState>()(
             raw === 'Failed to fetch' || raw.toLowerCase().includes('network')
               ? 'Tidak dapat terhubung ke Project Service. Pastikan python-project-service-fastapi berjalan di port 8500 (atau set VITE_PROJECT_API_URL di .env).'
               : raw
-          set({ projectsLoading: false, projectsError: msg })
+          set({ projects: [], projectsLoading: false, projectsError: msg })
         }
       },
 
       addProject: async (projectData) => {
         const created = await createProjectApi({
           name: projectData.name,
+          workspace_id: requireVitisWorkspace(projectData.workspaceId),
           description: projectData.description,
           tags: projectData.tags,
           icon_name: projectData.iconName,
           border_color: projectData.borderColor,
           folder_id: projectData.folderId ?? null,
         })
-        await get().fetchProjects()
+        await get().fetchProjects(created.workspace_id ?? undefined)
         const project = mapApiToProject(created)
         const found = get().projects.find((p) => p.id === project.id)
         return found ?? project
@@ -207,7 +215,9 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'vitis-project-storage',
-      partialize: (state) => ({ projects: state.projects }),
+      // Server-authorized workspace data is never hydrated across identities.
+      partialize: () => ({}),
+      merge: (_persisted, current) => current,
     }
   )
 )

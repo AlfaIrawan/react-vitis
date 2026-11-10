@@ -1,5 +1,7 @@
+import { AuthCopyrightNotice } from '@/modules/auth/components/AuthCopyrightNotice'
+import { AuthLoginLayout } from '@/modules/auth/AuthLoginLayout'
 import { AuthTransientAlert } from '@/modules/auth/components/AuthTransientAlert'
-import { AuthPageLayout, authCardButtonClass, authCardInputClass } from '@/modules/auth/AuthPageLayout'
+import { authCardButtonClass, authCardInputClass } from '@/modules/auth/AuthPageLayout'
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Fingerprint } from 'lucide-react'
@@ -78,7 +80,7 @@ export function LoginPage() {
   const isFormValid = isEmailValid && !!password && !isSubmitting
 
   return (
-    <AuthPageLayout>
+    <AuthLoginLayout footer={<AuthCopyrightNotice />}>
       <div id="login-card-header" className="space-y-2 text-center">
         <img src="/images/vitis-wordmark.svg"
           alt="Vitis — AI Workflow Automation"
@@ -172,16 +174,19 @@ export function LoginPage() {
       </Button>
 
       {microsoftEnabled && (
-        <>
-          <div className="my-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            Or continue with
-            <span className="h-px flex-1 bg-border" />
+        <div id="login-social" className="space-y-3">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center" aria-hidden>
+              <span className="w-full border-t border-border/60" />
+            </div>
+            <p className="relative flex justify-center text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="bg-card px-2">Or continue with</span>
+            </p>
           </div>
           <Button
             type="button"
             variant="outline"
-            className={authCardButtonClass}
+            className={cn(authCardButtonClass, 'relative font-normal gap-3')}
             onClick={() => void handleMicrosoft()}
           >
             <span
@@ -195,15 +200,10 @@ export function LoginPage() {
             </span>
             Sign in with Microsoft
           </Button>
-        </>
+        </div>
       )}
 
-      <p id="login-signup-link" className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
-        <a href="/register" className="text-primary hover:underline" onClick={(e) => { e.preventDefault(); navigate('/register') }}>
-          Sign up
-        </a>
-      </p>
-    </AuthPageLayout>
+      <p className="text-center text-sm text-muted-foreground">Access is provisioned by your administrator.</p>
+    </AuthLoginLayout>
   )
 }

@@ -1,3 +1,5 @@
+import { requireVitisWorkspace, useVitisWorkspace } from '@/auth/vitisWorkspace'
+import { getSession } from '@/auth/authService'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { FolderApi } from '@/lib/api/folderApi'
@@ -6,11 +8,11 @@ import {
   createFolder as createFolderApi,
   updateFolder as updateFolderApi,
   deleteFolder as deleteFolderApi,
-  fetchFolderTree as fetchFolderTreeApi,
 } from '@/lib/api/folderApi'
 
 export interface Folder {
   id: string
+  workspaceId?: string
   name: string
   description?: string
   ownerId: string
@@ -24,6 +26,7 @@ export interface Folder {
 function mapApiToFolder(api: FolderApi): Folder {
   return {
     id: api.id,
+    workspaceId: api.workspace_id ?? undefined,
     name: api.name,
     description: api.description ?? undefined,
     ownerId: api.owner_id,
@@ -40,7 +43,7 @@ interface FolderState {
   foldersLoading: boolean
   foldersError: string | null
   fetchFolders: (ownerId?: string, parentId?: string | null) => Promise<void>
-  addFolder: (folderData: Omit<Folder, 'id' | 'createdAt' | 'updatedAt' | 'projectCount' | 'childrenCount'> & { ownerId?: string }) => Promise<Folder>
+  addFolder: (folderData: Omit<Folder, 'id' | 'createdAt' | 'updatedAt' | 'projectCount' | 'childrenCount' | 'ownerId'> & { ownerId?: string }) => Promise<Folder>
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>
   deleteFolder: (id: string) => Promise<void>
   getFolder: (id: string) => Folder | undefined
@@ -57,15 +60,19 @@ export const useFolderStore = create<FolderState>()(
       foldersError: null,
 
       fetchFolders: async (ownerId, parentId) => {
-        set({ foldersLoading: true, foldersError: null })
+        set({ folders: [], foldersLoading: true, foldersError: null })
         try {
+          const subjectId = getSession()?.user.id
+          const workspaceId = requireVitisWorkspace()
           const res = await fetchFoldersApi({
+            workspace_id: workspaceId,
             page: 1,
             page_size: 100,
             owner_id: ownerId,
             parent_id: parentId,
           })
-          const folders = res.folders.map(mapApiToFolder)
+          if (getSession()?.user.id !== subjectId || useVitisWorkspace.getState().workspaceId !== workspaceId) return
+          const folders = res.folders.filter(folder => folder.workspace_id === workspaceId).map(mapApiToFolder)
           set({ folders, foldersLoading: false, foldersError: null })
         } catch (e) {
           const raw = e instanceof Error ? e.message : 'Failed to fetch folders'
@@ -73,7 +80,7 @@ export const useFolderStore = create<FolderState>()(
             raw === 'Failed to fetch' || raw.toLowerCase().includes('network')
               ? 'Tidak dapat terhubung ke Project Service. Pastikan python-project-service-fastapi berjalan di port 8500 (atau set VITE_PROJECT_API_URL di .env).'
               : raw
-          set({ foldersLoading: false, foldersError: msg })
+          set({ folders: [], foldersLoading: false, foldersError: msg })
         }
       },
 
@@ -82,7 +89,7 @@ export const useFolderStore = create<FolderState>()(
           name: folderData.name,
           description: folderData.description,
           parent_id: folderData.parentId ?? null,
-          owner_id: folderData.ownerId ?? '00000000-0000-0000-0000-000000000001',
+          workspace_id: requireVitisWorkspace(folderData.workspaceId),
         })
         await get().fetchFolders(folderData.ownerId, folderData.parentId)
         const folder = mapApiToFolder(created)
@@ -135,7 +142,8 @@ export const useFolderStore = create<FolderState>()(
     }),
     {
       name: 'folder-storage',
-      partialize: (state) => ({ folders: state.folders }),
+      partialize: () => ({}),
+      merge: (_persisted, current) => current,
     }
   )
 )

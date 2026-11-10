@@ -1,9 +1,10 @@
+import { createPkcePair } from '@/lib/oauthPkce'
 /**
  * Identity Lite OIDC client for Vitis — password grant, authorization_code (social),
- * refresh, userinfo, public register, and silent SSO bootstrap. Shares the identity-lite
- * backend + `tectona-spa` client with Platanus / Tectona.
+ * refresh, userinfo, and silent SSO bootstrap. Shares the identity-lite
+ * backend using its own `vitis-spa` client and administrator-provisioned entitlements.
  */
-import { IDENTITY_API_BASE, TECTONA_OIDC_CLIENT_ID } from './gatewayBase'
+import { IDENTITY_API_BASE, VITIS_OIDC_CLIENT_ID } from './gatewayBase'
 
 export interface OidcTokenResponse {
   access_token: string
@@ -52,21 +53,35 @@ export async function loginWithPassword(
   password: string,
   opts?: OidcLoginOptions,
 ): Promise<OidcTokenResponse> {
-  const body = new URLSearchParams({
-    grant_type: 'password',
-    client_id: TECTONA_OIDC_CLIENT_ID,
-    username: normalizeLoginEmail(email),
+  const { verifier, challenge } = await createPkcePair()
+  const redirectUri = `${window.location.origin}/login/oauth/callback`
+  const authorizeBody = new URLSearchParams({
+    response_type: 'code',
+    client_id: VITIS_OIDC_CLIENT_ID,
+    redirect_uri: redirectUri,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    email: normalizeLoginEmail(email),
     password,
+    scope: 'openid profile email',
   })
-  if (opts?.sessionPolicy === 'replace') body.set('session_policy', 'replace')
-  const res = await fetch(`${IDENTITY_API_BASE}/oauth2/token`, {
+  const authorized = await fetch(`${IDENTITY_API_BASE}/oauth2/authorize`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-    body,
+    body: authorizeBody,
   })
-  if (!res.ok) throw new Error(await parseError(res, 'Invalid email or password.'))
-  return res.json() as Promise<OidcTokenResponse>
+  if (!authorized.ok) {
+    throw new Error(await parseError(authorized, 'Invalid email or password.'))
+  }
+  const issued = (await authorized.json()) as { code?: string }
+  if (!issued.code) {
+    throw new Error('We could not complete sign-in. Please try again.')
+  }
+  return exchangeAuthorizationCode(
+    { code: issued.code, redirectUri, codeVerifier: verifier },
+    opts,
+  )
 }
 
 export async function fetchUserInfo(accessToken: string): Promise<OidcUserInfo> {
@@ -96,7 +111,7 @@ export async function registerWithEmail(input: {
       email: normalizeLoginEmail(input.email),
       password: input.password,
       display_name: input.displayName?.trim() || undefined,
-      client_id: TECTONA_OIDC_CLIENT_ID,
+      client_id: VITIS_OIDC_CLIENT_ID,
     }),
   })
   if (res.status === 409) {
@@ -110,14 +125,15 @@ export async function exchangeAuthorizationCode(input: {
   code: string
   redirectUri: string
   codeVerifier: string
-}): Promise<OidcTokenResponse> {
+}, opts?: OidcLoginOptions): Promise<OidcTokenResponse> {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
-    client_id: TECTONA_OIDC_CLIENT_ID,
+    client_id: VITIS_OIDC_CLIENT_ID,
     code: input.code,
     redirect_uri: input.redirectUri,
     code_verifier: input.codeVerifier,
   })
+  if (opts?.sessionPolicy === 'replace') body.set('session_policy', 'replace')
   const res = await fetch(`${IDENTITY_API_BASE}/oauth2/token`, {
     method: 'POST',
     credentials: 'include',
@@ -131,7 +147,7 @@ export async function exchangeAuthorizationCode(input: {
 export async function refreshAccessToken(refreshToken: string): Promise<OidcTokenResponse> {
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
-    client_id: TECTONA_OIDC_CLIENT_ID,
+    client_id: VITIS_OIDC_CLIENT_ID,
     refresh_token: refreshToken,
   })
   const res = await fetch(`${IDENTITY_API_BASE}/oauth2/token`, {
@@ -146,7 +162,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<OidcToke
 
 /** Silent cross-app SSO bootstrap from the shared identity-lite cookie. */
 export async function bootstrapSsoSession(
-  clientId: string = TECTONA_OIDC_CLIENT_ID,
+  clientId: string = VITIS_OIDC_CLIENT_ID,
 ): Promise<OidcTokenResponse | null> {
   try {
     const res = await fetch(
@@ -164,7 +180,7 @@ export async function bootstrapSsoSession(
 /** Best-effort server-side sign-out (revokes refresh sessions + clears SSO cookie). */
 export async function revokeServerSession(refreshToken?: string): Promise<void> {
   try {
-    const body = new URLSearchParams({ client_id: TECTONA_OIDC_CLIENT_ID })
+    const body = new URLSearchParams({ client_id: VITIS_OIDC_CLIENT_ID })
     if (refreshToken) body.set('refresh_token', refreshToken)
     await fetch(`${IDENTITY_API_BASE}/oauth2/logout`, {
       method: 'POST',

@@ -1,3 +1,4 @@
+import { authenticatedResourceFetch } from './authenticatedResourceFetch'
 /**
  * Todo service API client.
  * Integrates with python-todo-service-fastapi (default port 8650).
@@ -142,12 +143,12 @@ export async function fetchTodos(params?: {
   if (params?.entity_id) url.searchParams.set('entity_id', params.entity_id)
   if (params?.page) url.searchParams.set('page', String(params.page))
   if (params?.page_size) url.searchParams.set('page_size', String(params.page_size ?? 50))
-  const res = await fetch(url.toString())
+  const res = await authenticatedResourceFetch(url.toString())
   return handleResponse<TodoListResponse>(res)
 }
 
 export async function createTodo(payload: TodoCreatePayload): Promise<TodoItem> {
-  const res = await fetch(`${BASE_URL}/v1/todos`, {
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/todos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -159,7 +160,7 @@ export async function createTodo(payload: TodoCreatePayload): Promise<TodoItem> 
 }
 
 export async function updateTodo(id: string, payload: TodoUpdatePayload): Promise<TodoItem> {
-  const res = await fetch(`${BASE_URL}/v1/todos/${id}`, {
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/todos/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -168,6 +169,6 @@ export async function updateTodo(id: string, payload: TodoUpdatePayload): Promis
 }
 
 export async function deleteTodo(id: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/v1/todos/${id}`, { method: 'DELETE' })
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/todos/${id}`, { method: 'DELETE' })
   await handleResponse<void>(res)
 }

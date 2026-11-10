@@ -1,3 +1,5 @@
+import { useVitisWorkspace } from '@/auth/vitisWorkspace'
+import { VitisWorkspaceSelector } from '../components/VitisWorkspaceSelector'
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
@@ -37,6 +39,7 @@ import type { Folder, Project } from '@/modules/projects'
 import { ProjectsErrorBoundary } from '../components/ProjectsErrorBoundary'
 
 export function ProjectListPage() {
+  const authorizedWorkspaceId = useVitisWorkspace(state => state.workspaceId)
   const {
     projects,
     searchProjects,
@@ -156,7 +159,7 @@ export function ProjectListPage() {
   useEffect(() => {
     fetchProjects()
     fetchFolders() // Fetch folders on mount
-  }, [fetchProjects, fetchFolders])
+  }, [fetchProjects, fetchFolders, authorizedWorkspaceId])
 
   // Keyboard shortcut: Esc to exit selection mode
   useEffect(() => {
@@ -633,6 +636,7 @@ export function ProjectListPage() {
         onDragOver={handleDragOver}
       >
         <div onClick={handleContentAreaClick} onContextMenu={handleContentAreaContextMenu} className="min-h-[200px]">
+          <VitisWorkspaceSelector />
           <FolderView
             folder={folder}
             onBack={handleBackToRoot}
@@ -861,6 +865,7 @@ export function ProjectListPage() {
       >
         <div className="space-y-6" onClick={handleContentAreaClick} onContextMenu={handleContentAreaContextMenu}>
         {/* Breadcrumb */}
+        <VitisWorkspaceSelector />
         <Breadcrumb items={[{ label: 'Projects' }]} />
 
         {/* Header */}

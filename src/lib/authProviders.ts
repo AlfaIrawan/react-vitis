@@ -88,13 +88,14 @@ export function buildOidcAuthorizeUrl(
   opts?: { state?: string; codeChallenge?: string; codeVerifier?: string },
 ): string {
   const base = (envFlag('VITE_IDENTITY_LITE_API_URL') ?? '/api/identity-lite').replace(/\/$/, '')
-  const clientId = envFlag('VITE_TECTONA_OIDC_CLIENT_ID') ?? 'tectona-spa'
+  const clientId = envFlag('VITE_VITIS_OIDC_CLIENT_ID') ?? 'vitis-spa'
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
     redirect_uri: redirectUri,
     scope: 'openid profile email',
     idp: provider,
+    oauth_intent: 'signin',
   })
   if (opts?.state) params.set('state', opts.state)
   if (opts?.codeChallenge) {

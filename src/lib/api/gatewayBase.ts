@@ -9,8 +9,8 @@ export const GATEWAY_RUNTIME_BASE = (
 export const IDENTITY_API_BASE = (
   (import.meta.env.VITE_IDENTITY_LITE_API_URL as string | undefined) ?? ''
 ).replace(/\/$/, '') || '/api/identity-lite'
-export const TECTONA_OIDC_CLIENT_ID =
-  (import.meta.env.VITE_TECTONA_OIDC_CLIENT_ID as string | undefined)?.trim() || 'tectona-spa'
+export const VITIS_OIDC_CLIENT_ID =
+  (import.meta.env.VITE_VITIS_OIDC_CLIENT_ID as string | undefined)?.trim() || 'vitis-spa'
 
 export function serviceApiBase(servicePrefix: string, envOverride?: string): string {
   const override = envOverride?.trim()

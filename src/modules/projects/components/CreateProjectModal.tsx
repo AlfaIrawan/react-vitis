@@ -1,3 +1,5 @@
+import { VitisWorkspaceSelector } from './VitisWorkspaceSelector'
+import { requireVitisWorkspace } from '@/auth/vitisWorkspace'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
@@ -165,6 +167,7 @@ export function CreateProjectModal({
     try {
       const newProject = await addProject({
         name: formData.name.trim(),
+        workspaceId: requireVitisWorkspace(),
         description: formData.description.trim() || undefined,
         tags: tags.length > 0 ? tags : undefined,
         iconName: formData.iconName || undefined,
@@ -270,6 +273,7 @@ export function CreateProjectModal({
         {/* Content */}
         <div className="p-6 overflow-y-auto h-[calc(100%-5rem)]">
           <form onSubmit={handleSubmit} className="space-y-6">
+              <VitisWorkspaceSelector />
           <div className="space-y-2">
             <Label htmlFor="name">
               Project Name <span className="text-destructive">*</span>

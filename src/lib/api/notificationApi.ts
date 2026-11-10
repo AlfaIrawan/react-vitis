@@ -1,3 +1,4 @@
+import { authenticatedResourceFetch } from './authenticatedResourceFetch'
 /**
  * Notification service API client.
  * Integrates with python-notification-service-fastapi (e.g. http://localhost:8700).
@@ -112,14 +113,14 @@ export async function fetchNotifications(params: NotificationListParams & {
   sp.set('page', String(page))
   sp.set('page_size', String(page_size))
   if (unread_only) sp.set('is_read', 'false')
-  const res = await fetch(`${BASE_URL}/v1/notifications?${sp}`)
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/notifications?${sp}`)
   const data = await handleResponse<{
     notifications: NotificationApiBackend[]
     total: number
     page: number
     page_size: number
   }>(res)
-  const unreadRes = await fetch(
+  const unreadRes = await authenticatedResourceFetch(
     `${BASE_URL}/v1/notifications/unread-count?app_id=${encodeURIComponent(app_id)}&user_id=${encodeURIComponent(user_id)}`
   )
   const unreadData = await handleResponse<{ unread_count: number }>(unreadRes)
@@ -139,7 +140,7 @@ export async function fetchUnreadCount(params: { app_id: string; user_id: string
   const sp = new URLSearchParams()
   sp.set('app_id', params.app_id)
   sp.set('user_id', params.user_id)
-  const res = await fetch(`${BASE_URL}/v1/notifications/unread-count?${sp}`)
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/notifications/unread-count?${sp}`)
   const data = await handleResponse<{ unread_count: number }>(res)
   return { unread_count: data.unread_count }
 }
@@ -155,7 +156,7 @@ export async function markNotificationRead(
   sp.set('app_id', params.app_id)
   sp.set('user_id', params.user_id)
   sp.set('is_read', 'true')
-  const res = await fetch(`${BASE_URL}/v1/notifications/${id}/read?${sp}`, {
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/notifications/${id}/read?${sp}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
   })
@@ -175,7 +176,7 @@ export async function markAllNotificationsRead(params: {
   const sp = new URLSearchParams()
   sp.set('app_id', params.app_id)
   sp.set('user_id', params.user_id)
-  const res = await fetch(`${BASE_URL}/v1/notifications/mark-all-read?${sp}`, {
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/notifications/mark-all-read?${sp}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   })
@@ -202,7 +203,7 @@ export interface CreateNotificationPayload {
  * Create a notification. Used when e.g. folder/project is created so it appears in the notification panel.
  */
 export async function createNotification(payload: CreateNotificationPayload): Promise<void> {
-  const res = await fetch(`${BASE_URL}/v1/notifications`, {
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/notifications`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

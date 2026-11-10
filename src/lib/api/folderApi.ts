@@ -1,3 +1,6 @@
+import { authenticatedResourceFetch } from './authenticatedResourceFetch'
+import { ensureFreshSession } from '@/auth/authService'
+import { requireVitisWorkspace } from '@/auth/vitisWorkspace'
 /**
  * Folder service API client.
  * Uses python-project-service-fastapi (http://localhost:8500).
@@ -8,10 +11,11 @@ const BASE_URL =
   import.meta.env.VITE_PROJECT_API_URL ??
   (import.meta.env.DEV ? '/api/project-service' : 'http://localhost:8500')
 
-const dummyOwnerId = '00000000-0000-0000-0000-000000000001'
+
 
 export interface FolderApi {
   id: string
+  workspace_id: string | null
   name: string
   description: string | null
   owner_id: string
@@ -51,36 +55,39 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function fetchFolders(params?: {
+  workspace_id?: string
   page?: number
   page_size?: number
   owner_id?: string
   parent_id?: string | null
 }): Promise<FolderListResponse> {
+  const workspaceId = requireVitisWorkspace(params?.workspace_id)
   const sp = new URLSearchParams()
+  sp.set('workspace_id', workspaceId)
   sp.set('page', String(params?.page ?? 1))
   sp.set('page_size', String(params?.page_size ?? 100))
   if (params?.owner_id) sp.set('owner_id', params.owner_id)
   if (params?.parent_id !== undefined) {
     sp.set('parent_id', params.parent_id === null ? 'null' : params.parent_id)
   }
-  const res = await fetch(`${BASE_URL}/v1/folders?${sp}`)
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/folders?${sp}`)
   return handleResponse<FolderListResponse>(res)
 }
 
 export async function fetchFolder(id: string): Promise<FolderApi | null> {
-  const res = await fetch(`${BASE_URL}/v1/folders/${id}`)
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/folders/${id}`)
   if (res.status === 404) return null
   return handleResponse<FolderApi>(res)
 }
 
-export async function fetchFolderTree(owner_id?: string): Promise<FolderTreeItem[]> {
-  const sp = new URLSearchParams()
-  if (owner_id) sp.set('owner_id', owner_id)
-  const res = await fetch(`${BASE_URL}/v1/folders/tree?${sp}`)
-  return handleResponse<FolderTreeItem[]>(res)
+/** The legacy tree endpoint does not support an explicit workspace filter. */
+export async function fetchFolderTree(): Promise<FolderTreeItem[]> {
+  requireVitisWorkspace()
+  throw new Error('Workspace-scoped folder tree is unavailable. Use the workspace folder list instead.')
 }
 
 export interface CreateFolderPayload {
+  workspace_id: string
   name: string
   description?: string
   parent_id?: string | null
@@ -88,14 +95,18 @@ export interface CreateFolderPayload {
 }
 
 export async function createFolder(payload: CreateFolderPayload): Promise<FolderApi> {
-  const res = await fetch(`${BASE_URL}/v1/folders`, {
+  const workspaceId = requireVitisWorkspace(payload.workspace_id)
+  const session = await ensureFreshSession()
+  if (!session?.user.id) throw new Error('Sign in to create a folder.')
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/folders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: payload.name,
       description: payload.description ?? null,
       parent_id: payload.parent_id ?? null,
-      owner_id: payload.owner_id ?? dummyOwnerId,
+      owner_id: session.user.id,
+      workspace_id: workspaceId,
     }),
   })
   return handleResponse<FolderApi>(res)
@@ -108,7 +119,7 @@ export interface UpdateFolderPayload {
 }
 
 export async function updateFolder(id: string, payload: UpdateFolderPayload): Promise<FolderApi> {
-  const res = await fetch(`${BASE_URL}/v1/folders/${id}`, {
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/folders/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -117,7 +128,7 @@ export async function updateFolder(id: string, payload: UpdateFolderPayload): Pr
 }
 
 export async function deleteFolder(id: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/v1/folders/${id}`, { method: 'DELETE' })
+  const res = await authenticatedResourceFetch(`${BASE_URL}/v1/folders/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     const text = await res.text()
     throw new Error(text || `HTTP ${res.status}`)

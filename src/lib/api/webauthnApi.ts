@@ -4,7 +4,7 @@
  * options from py_webauthn map straight through.
  */
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser'
-import { IDENTITY_API_BASE, TECTONA_OIDC_CLIENT_ID } from './gatewayBase'
+import { IDENTITY_API_BASE, VITIS_OIDC_CLIENT_ID } from './gatewayBase'
 
 export interface PasskeyTokenResponse {
   access_token: string
@@ -81,7 +81,7 @@ export function passkeyErrorMessage(err: unknown, mode: 'signin' | 'enroll' = 's
 
 /** Sign in with a passkey (usernameless / discoverable). Returns an OIDC token bundle. */
 export async function authenticateWithPasskey(
-  clientId: string = TECTONA_OIDC_CLIENT_ID,
+  clientId: string = VITIS_OIDC_CLIENT_ID,
 ): Promise<PasskeyTokenResponse> {
   const begin = await postJson<{ options: unknown; ceremony: string }>(
     '/webauthn/authenticate/begin',

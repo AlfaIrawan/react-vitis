@@ -1,4 +1,4 @@
-import { PlatformRouteLoadingFallback } from '@/components/loading/PlatformRouteLoadingFallback'
+import { InternalAccessGate } from './InternalAccessGate'
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { ensureFreshSession, attemptSilentSso } from './authService'
@@ -47,5 +47,5 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />
   }
 
-  return <>{children}</>
+  return <InternalAccessGate>{children}</InternalAccessGate>
 }
