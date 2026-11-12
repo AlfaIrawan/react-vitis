@@ -12,6 +12,8 @@ export interface InternalUserGrant {
   valid_until?: string | null
   login_verified_at?: string | null
   admin_verified_at?: string | null
+  updated_at?: string | null
+  revision?: number
 }
 export interface ProvisionInternalUser { email: string; display_name: string; roles: string[]; password?: string }
 export interface UpdateInternalGrant { roles: string[]; enabled: boolean }
@@ -41,6 +43,13 @@ function safeError(status: number, detail: unknown): string {
   if (status === 409) return 'Change conflicts with an existing identity or protected administrator constraint. Refresh and review before retrying.'
   return 'The identity service could not complete this operation. Refresh the directory to check its outcome before retrying.'
 }
+export class InternalMutationOutcomeUnknownError extends Error {
+  readonly outcomeUnknown = true
+}
+export function isInternalMutationOutcomeUnknown(error: unknown): boolean {
+  return error instanceof InternalMutationOutcomeUnknownError
+}
+
 async function request<T>(suffix: string, method: 'GET' | 'POST' | 'PUT', body?: unknown): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   const token = getSession()?.token
@@ -52,13 +61,18 @@ async function request<T>(suffix: string, method: 'GET' | 'POST' | 'PUT', body?:
       ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
     if (!response.ok) {
       const error = await response.json().catch(() => ({})) as { detail?: unknown }
+      if (method !== 'GET' && response.status >= 500) throw new InternalMutationOutcomeUnknownError('The service could not confirm the change. Refresh the directory to reconcile its outcome before any further save.')
       throw new Error(safeError(response.status, error.detail))
     }
-    return await response.json() as T
+    try { return await response.json() as T }
+    catch {
+      if (method !== 'GET') throw new InternalMutationOutcomeUnknownError('The change response was incomplete. Refresh the directory to reconcile its outcome before any further save.')
+      throw new Error('The directory response was incomplete. Refresh and try again.')
+    }
   } catch (error) {
     if (error instanceof Error && error.name !== 'AbortError' && !(error instanceof TypeError)) throw error
-    throw new Error(method === 'GET' ? 'Unable to load the application directory. Try again.' :
-      'Connection interrupted. The change may have completed. Refresh the directory and verify its outcome before retrying.')
+    if (method !== 'GET') throw new InternalMutationOutcomeUnknownError('Connection interrupted. The change may have completed. Refresh the directory and verify its outcome before any further save.')
+    throw new Error('Unable to load the application directory. Try again.')
   } finally { window.clearTimeout(timer) }
 }
 export const listInternalUsers = () => request<{ items: InternalUserGrant[] }>('', 'GET')

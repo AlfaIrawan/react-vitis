@@ -66,6 +66,8 @@ vm.runInNewContext(transpile('src/auth/internalAccessRoles.ts'), { exports: role
  assert(unavailable.includes('Access verification unavailable'))
  // Server render proves direct page access denies members/inherited roles and exposes only app admins.
  let currentRoles = []
+ const lifecycle = {}
+ vm.runInNewContext(transpile('src/lib/internalUserLifecycle.ts'), { exports: lifecycle })
  const page = {}
  vm.runInNewContext(transpile('src/pages/InternalUsersPage.tsx'), {
   exports: page,
@@ -76,6 +78,7 @@ vm.runInNewContext(transpile('src/auth/internalAccessRoles.ts'), { exports: role
    if (name.includes('internalAccessRoles')) return { ...roles, useInternalAccessRoles: () => currentRoles }
    if (name.includes('InternalAccessGate')) return { InternalAccessDenied: ({ administration }) => React.createElement('p', null, administration ? 'Administrator access required' : 'Access denied') }
    if (name.includes('internalUsersApi')) return api
+   if (name.includes('internalUserLifecycle')) return lifecycle
    return { getSession: () => null }
   },
  })
